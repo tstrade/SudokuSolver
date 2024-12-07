@@ -4,7 +4,7 @@
 typedef struct CSP CSP;
 
 // Construct the constraint satisfaction problem
-CSP *__init__();
+CSP *initCSP();
 // Add the variable with its value to the assignment (discarding old value, if any)
 //     "assignment" is a list of ints to represent each space on a 9x9 Soduku board (index 0-80)
 void assign(CSP *self, int variable, int value, int *assignment);

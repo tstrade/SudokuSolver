@@ -26,7 +26,7 @@ struct CSP {
   void (*restore)(CSP *self, int **removals);
 };
 
-CSP *__init__() {
+CSP *initCSP() {
   CSP *self = malloc(sizeof(CSP));
   // Return NULL if not enough memory for the CSP structure
   if (self == NULL) { return NULL; }
