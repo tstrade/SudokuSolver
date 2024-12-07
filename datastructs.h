@@ -6,7 +6,7 @@
 typedef struct Queue Queue;
 Queue *__initQueue__(int initSize);
 void *enqueue(Queue *q, void *item);
-void *dequeue(Queue *q, int index);
+void *dequeue(Queue *q);
 void *peek(Queue *q);
 int isEmpty(Queue *q);
 int isFull(Queue *q);
