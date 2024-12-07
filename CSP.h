@@ -9,7 +9,7 @@ CSP *__init__();
 //     "assignment" is a list of ints to represent each space on a 9x9 Soduku board (index 0-80)
 void assign(CSP *self, int variable, int value, int *assignment);
 // Remove variable from assignment (DO NOT use for reassigning a variable's value)
-void unassign(CSP *self, int variable, int *assignment);
+void unassign(int variable, int *assignment);
 // Return number of conflicts variable = value has with other variables
 int nconflicts(CSP *self, int variable, int value, int *assignment);
 // Show human-readable representation of CSP
@@ -20,7 +20,7 @@ void display(CSP *self, int *assignment);
 // Return list of applicable actions (nonconfliction assignments to an unassigned variable)
 int **actions(CSP *self, int *state);
 // Perform action and return new state
-int *result(CSP *self, int *state, int *action);
+int *result(int *state, int *action);
 // Check if Soduku is solved correctly
 int goal_test(CSP *self, int *state);
 // Want to be able to prune values from domains
