@@ -29,8 +29,10 @@ void support_pruning(CSP *self);
 int **suppose(CSP *self, int variable, int value);
 // Rule out variable = value
 void prune(CSP *self, int variable, int value, int **removals);
+// Return partial assignment implied by the current inferences
+int *infer_assignment(CSP *self);
 // Undo supposition and all inferences from it
-void restore (CSP *self, int **removals);
+void restore(CSP *self, int **removals);
 
 // ************Other************** //
 
@@ -41,5 +43,7 @@ int count(int **seq);
 
 int getRow(int variable);
 int getCol(int variable);
+
+void destroyCSP(CSP *self);
 
 #endif
