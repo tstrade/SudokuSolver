@@ -37,11 +37,16 @@ void enqueue(Queue *q, int *item) {
 
 Queue *dequeue(Queue *q) {
   Queue *newHead = q->next;
-  q = q->next; // Move to next item in queue
-  q->head = newHead; // Update the front of the queue
+  newHead->head = newHead; // Update the front of the queue
+  destroyQueue(q);
   while (q->next != NULL) { // Update for the rest of the queue
     q->next->head = newHead;
     q = q->next;
   }
-  return q;
+  return newHead;
+}
+
+void destroyQueue(Queue *q) {
+  free(q->varValTuple);
+  free(q);
 }

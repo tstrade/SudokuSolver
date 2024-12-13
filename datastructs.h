@@ -4,21 +4,20 @@
 // Queue will be based off of a wrapped array
 // If the queue becomes 90% full, double the size
 typedef struct Queue Queue;
-Queue *__initQueue__(int initSize);
-void *enqueue(Queue *q, void *item);
-void *dequeue(Queue *q);
-void *peek(Queue *q);
-int isEmpty(Queue *q);
-int isFull(Queue *q);
+Queue *initQueue(Queue *head);
+void enqueue(Queue *q, void *item);
+Queue *dequeue(Queue *q);
+int *peek(Queue *q);
+void destroyQueue(Queue *q);
 
 /********************************************************************/
 
 // An entry will be a (unhashed) key and a pointer to a value of any type
 typedef struct entry entry;
-entry *__initEntry__(unsigned int key, int *values);
+entry *initEntry(unsigned int key, int *values);
 // Dictionary will contain a "hash table"
 typedef struct dict dict;
-dict *__initDict__(int initSize);
+dict *initDict(int initSize);
 unsigned int hash(unsigned int key);
 unsigned int unhash(unsigned int hashedKey);
 entry *getValue(dict *d, unsigned int hashedKey);
