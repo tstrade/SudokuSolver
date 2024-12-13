@@ -4,7 +4,10 @@
 #include <stdlib.h>
 
 struct Solver {
-  int (*var_AC3)(AC3_args args);
+  Queue *q;
+  CSP *csp;
+  int **removals; // List of 81 entries (one for each var) and 9 values for each
+  int (*AC3)(Solver *self);
   int (*revise)(Solver *self, CSP *csp, int Xi, int Xj, int **removals);
   void (*backtracking_search)(Solver *self, CSP *csp);
   int* (*backtrack)(Solver *self, int *assigment, CSP *csp);
@@ -12,30 +15,29 @@ struct Solver {
   Queue* (*get_queue)(Solver *self, CSP *csp, int variable);
 };
 
-struct AC3_args {
-  Solver *self;
-  CSP *csp;
-  Queue *q;
-  int **removals;
-};
-
-int var_AC3(AC3_args args) {
-  Solver *self = args.self;
-  CSP *csp = args.csp;
-  Queue *q = args.q;
-  int **rmv = malloc(81 * sizeof(int *));
-  if (rmv == NULL) { return -1; }
-  for (int i = 0; i < 9; i++) {
-    rmv[i] = malloc(9 * sizeof(int));
-    if (rmv[i] == NULL) { return -1; }
+Solver *initSolver() {
+  if ((Solver *self = malloc(sizeof(Solver))) == NULL) { return NULL; }
+  // Return NULL if not enough memory for Solver structure
+  // Same concept is used for allocated memory for the struct members
+  if ((Queue *q = initQueue(NUM_SLOTS)) == NULL) { return NULL; }
+  if ((CSP *csp = initCSP()) == NULL) { return NULL; }
+  if ((int **rmv = malloc(NUM_SLOTS * sizeof(int *))) == NULL) { return NULL; }
+  for (int i = 0; i < NUM_SLOTS; i++) {
+    if ((rmv[i] = malloc(NUM_VALUES * sizeof(int))) == NULL) { return NULL; }
   }
-  int **removals = args.removals ? args.removals : rmv;
-  return AC3(self, csp, q, removals);
+
+  return self;
 }
 
-int AC3(Solver *self, CSP *csp, Queue *q, int **removals) {
+int AC3(Solver *self) {
   if (!q->currSize) {
-    // queue = [Neighbors for Variable in csp.curr_domains for Neighbors in self.get_queue(csp, Variable)]
+    /* for Variable in csp.curr_domains:
+	  for Neighbor in self.get_queue(csp, Variable):
+	    q.append(Neighbor) */
+    int var;
+    for (var = 0; var < NUM_SLOTS; var++) {
+      q
+    }
   }
   while (q != NULL) {
     /*

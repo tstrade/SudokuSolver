@@ -2,25 +2,46 @@
 #include <stdlib.h>
 
 struct Queue {
-  int currSize;
-  int maxSize;
-  int **items;
+  int *varValTuple;
+  Queue *head;
+  Queue *next;
 };
 
-Queue *__initQueue__(int initSize) {
-  Queue *q = malloc(sizeof(Queue));
-  if (q == NULL) { return NULL; } // Not enough memory!
-
-  q->currSize = 0; // These will be used to compute a ratio
-  q->maxSize = initSize; // So the queue can be expanded if necessary
-  q->items = malloc(initSize * sizeof(void *));
-  if (q->items == NULL) { return NULL; }; // Not enough memory!
-  for (int i = 0; i < initSize; i++) {
-    q->items[i] = malloc( * sizeof(int)); // For Soduku, each variable
+Queue *initQueue(Queue *head) {
+  Queue *q;
+  if ((q = malloc(sizeof(Queue))) == NULL) { return NULL; } // Not enough memory!
+  if ((q->varValTuple = calloc(2, sizeof(int))) == NULL) { return NULL; }
+  if (head == NULL) {
+     q->head = q;
+  } else {
+    q->head = head;
+  }
 
   return q;
 }
 
-void *enqueue(Queue *q, void *item) {
+void enqueue(Queue *q, int *item) {
+  Queue *head = q->head; // Next item should know the current head of queue
+  if (q->varValTuple[1] == 0) { // A value is between 1 - 9,
+    q->varValTuple = item; // val = 0 means the tuple hasn't been set yet
+    return;
+  }
 
+  while (q->next != NULL) { // Iterate to the end of the queue
+    q = q->next;
+  }
+  q->next = initQueue(head); // Initialize next item in queue
+  q->next->varValTuple = item; // Set tuple value
+  q->next->head = head;
+}
+
+Queue *dequeue(Queue *q) {
+  Queue *newHead = q->next;
+  q = q->next; // Move to next item in queue
+  q->head = newHead; // Update the front of the queue
+  while (q->next != NULL) { // Update for the rest of the queue
+    q->next->head = newHead;
+    q = q->next;
+  }
+  return q;
 }
