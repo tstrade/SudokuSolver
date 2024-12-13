@@ -5,7 +5,7 @@
 // If the queue becomes 90% full, double the size
 typedef struct Queue Queue;
 Queue *initQueue(Queue *head);
-void enqueue(Queue *q, void *item);
+void enqueue(Queue *q, int *item);
 Queue *dequeue(Queue *q);
 int *peek(Queue *q);
 void destroyQueue(Queue *q);

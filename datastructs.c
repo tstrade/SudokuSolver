@@ -5,6 +5,9 @@ struct Queue {
   int *varValTuple;
   Queue *head;
   Queue *next;
+  void (*enqueue)(Queue *q, int *item);
+  Queue *(*dequeue)(Queue *q);
+  int *(*peek)(Queue *q);
 };
 
 Queue *initQueue(Queue *head) {
@@ -37,13 +40,19 @@ void enqueue(Queue *q, int *item) {
 
 Queue *dequeue(Queue *q) {
   Queue *newHead = q->next;
+  Queue *iterQ = q->next;
   newHead->head = newHead; // Update the front of the queue
   destroyQueue(q);
-  while (q->next != NULL) { // Update for the rest of the queue
-    q->next->head = newHead;
-    q = q->next;
+  while (iterQ->next != NULL) { // Update for the rest of the queue
+    iterQ->next->head = newHead;
+    iterQ = iterQ->next;
   }
   return newHead;
+}
+
+int *peek(Queue *q) {
+  if (q != NULL) { return q->varValTuple; }
+  else { return NULL; }
 }
 
 void destroyQueue(Queue *q) {

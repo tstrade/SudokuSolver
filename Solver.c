@@ -6,7 +6,7 @@
 struct Solver {
   Queue *q;
   CSP *csp;
-  int **removals; // List of 81 entries (one for each var) and 9 values for each
+  int **removals;
   int (*AC3)(Solver *self);
   int (*revise)(Solver *self, CSP *csp, int Xi, int Xj, int **removals);
   void (*backtracking_search)(Solver *self, CSP *csp);
@@ -16,30 +16,44 @@ struct Solver {
 };
 
 Solver *initSolver() {
-  if ((Solver *self = malloc(sizeof(Solver))) == NULL) { return NULL; }
+  Solver *self = malloc(sizeof(Solver));
+  if (self == NULL) { return NULL; }
   // Return NULL if not enough memory for Solver structure
   // Same concept is used for allocated memory for the struct members
-  if ((Queue *q = initQueue(NUM_SLOTS)) == NULL) { return NULL; }
-  if ((CSP *csp = initCSP()) == NULL) { return NULL; }
-  if ((int **rmv = malloc(NUM_SLOTS * sizeof(int *))) == NULL) { return NULL; }
+
+  // Enqueues/dequeues Variable-Value tuples to be considered
+  Queue *q = initQueue(head = NULL);
+  if (q == NULL) { return NULL; }
+
+  // Keeps track of current assignments, domains, etc.
+  CSP *csp = initCSP();
+  if (csp == NULL) { return NULL; }
+
+  // '0' indicates not removed, '1' indicates removed (from possible variable-value pairs)
+  int **rmv = calloc(NUM_SLOTS, sizeof(int *));
+  if (rmv == NULL) { return NULL; }
   for (int i = 0; i < NUM_SLOTS; i++) {
-    if ((rmv[i] = malloc(NUM_VALUES * sizeof(int))) == NULL) { return NULL; }
+    rmv[i] = calloc(NUM_VALUES, sizeof(int));
+    if (rmv[i] == NULL) { return NULL; }
   }
 
   return self;
 }
 
 int AC3(Solver *self) {
-  if (!q->currSize) {
+  // We know the queue is empty if the first value is set to 0 (it can only be 1 - 9)
+  if (self->q->varValTuple[1] == 0) {
     /* for Variable in csp.curr_domains:
 	  for Neighbor in self.get_queue(csp, Variable):
 	    q.append(Neighbor) */
-    int var;
+    int var, val;
     for (var = 0; var < NUM_SLOTS; var++) {
-      q
+      for (val = 0; val < NUM_VALUES; val++) {
+
+      }
     }
   }
-  while (q != NULL) {
+  while (q->next != NULL) {
     /*
     Xi, Xj = queue[0][0], queue.pop(0)[1]
     if self.revise(csp, Xi, Xj, removals):
@@ -50,6 +64,15 @@ int AC3(Solver *self) {
     */
   }
   return 1;
+}
+
+Queue *get_queue(Solver *self, int variable) {
+  Queue *q = initQueue(head = NULL);
+
+  int neighbor;
+  for (neighbor = 0; neighbor < NUM_NEIGHBORS; neighbor+) {
+    if (self->csp->neighbors[var][neighbor] == 1)
+  }
 }
 
 int main() {
