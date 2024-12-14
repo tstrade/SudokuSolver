@@ -7,13 +7,19 @@ typedef struct CSP CSP;
 CSP *initCSP();
 // Add the variable with its value to the assignment (discarding old value, if any)
 //     "assignment" is a list of ints to represent each space on a 9x9 Soduku board (index 0-80)
+
+// Comparison function to sort {var: [neighbors], ...} in increasing order w/ qsort()
+int sortNeighbors(const void *a, const void *b);
+// Initialize the neighbors "dictionary" - allows board size to be mutable
+void initNeighbors(CSP *csp);
+// Set a variable (slot on board) to the determined value
 void assign(CSP *self, int variable, int value, int *assignment);
 // Remove variable from assignment (DO NOT use for reassigning a variable's value)
 void unassign(int variable, int *assignment);
 // Return number of conflicts variable = value has with other variables
 int nconflicts(CSP *self, int variable, int value, int *assignment);
 // Show human-readable representation of CSP
-void display(CSP *self, int *assignment);
+void display(int *assignment);
 
 // ************Following methods are for tree / graph traversal************** //
 

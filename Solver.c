@@ -68,11 +68,16 @@ int AC3(Solver *self) {
 
 Queue *get_queue(Solver *self, int variable) {
   Queue *q = initQueue(head = NULL);
-
-  int neighbor;
-  for (neighbor = 0; neighbor < NUM_NEIGHBORS; neighbor+) {
-    if (self->csp->neighbors[var][neighbor] == 1)
+  // We want to find each variable-variable pair that is in the same row and/or
+  // column, which will help us check our possible solution against our constraint
+  int checkNeighbors;
+  for (checkNeighbors = 0; checkNeighbors < NUM_NEIGHBORS; checkNeighbors++) {
+    if ((int neighbor = self->csp->neighbors[var][checkNeighbor]) == 1) {
+      int *tuple = [variable, neighbor];
+      q->enqueue(q, tuple);
+    }
   }
+  return q;
 }
 
 int main() {
