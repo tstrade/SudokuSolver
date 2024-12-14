@@ -302,6 +302,13 @@ int count(int *seq) {
   return count;
 }
 
+int getRow(int variable) {
+  return variable / NUM_VALUES;
+}
+
+int getCol(int variable) {
+  return variable % NUM_VALUES;
+}
 
 void destoryCSP(CSP *self) {
   free(self->variables);
