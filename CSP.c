@@ -58,26 +58,26 @@ CSP *initCSP() {
   // Return NULL if not enough memory for the CSP structure
   checkNULL((void *)self);
 
-  int i, j;
+  int var, val;
 
   // List of atomic variables - for Soduku, it will be the
   // indexes of the 1D array representation of the board
   self->variables = malloc(NUM_SLOTS * sizeof(int));
   checkNULL((void *)self->variables);
 
-  for (i = 0; i < NUM_SLOTS; i++) { self->variables[i] = i; }
+  for (var = 0; var < NUM_SLOTS; i++) { self->variables[var] = var; }
 
   // For each variable, there is a list of possible entries ranging from 1 to 9
   self->domains = malloc(NUM_SLOTS * sizeof(int *));
   checkNULL((void *)self->domains);
 
-  for (i = 0; i < NUM_SLOTS; i++) {
-    self->domains[i] = malloc(NUM_VALUES * sizeof(int));
-    checkNULL((void *)self->domains[i]);
+  for (var = 0; var < NUM_SLOTS; var++) {
+    self->domains[var] = malloc(NUM_VALUES * sizeof(int));
+    checkNULL((void *)self->domains[var]);
 
     // Fill domains with appropriate range of values
-    for (j = 0; j < NUM_VALUES; j++) {
-      self->domains[i][j] = j + 1;
+    for (val = 0; val < NUM_VALUES; val++) {
+      self->domains[var][val] = val + 1;
     }
   }
 
@@ -86,9 +86,9 @@ CSP *initCSP() {
   self->neighbors = malloc(NUM_SLOTS * sizeof(int *));
   checkNULL((void *)self->neighbors);
 
-  for (i = 0; i < NUM_SLOTS; i++) {
-    self->neighbors[i] = malloc(NUM_NEIGHBORS * sizeof(int));
-    checkNULL((void *)self->neighbors[i]);
+  for (val = 0; val < NUM_SLOTS; val++) {
+    self->neighbors[var] = malloc(NUM_NEIGHBORS * sizeof(int));
+    checkNULL((void *)self->neighbors[var]);
   }
 
   // As we make suppositions about variable assignments, we want to be
@@ -97,9 +97,9 @@ CSP *initCSP() {
   self->removals = malloc(NUM_SLOTS * sizeof(int *));
   checkNULL((void *)self->removals);
 
-  for (i = 0; i < NUM_VALUES; i++) {
-    self->removals[i] = calloc(NUM_VALUES, sizeof(int));
-    checkNULL((void *)self->removals[i]);
+  for (val = 0; val < NUM_VALUES; val++) {
+    self->removals[val] = calloc(NUM_VALUES, sizeof(int));
+    checkNULL((void *)self->removals[val]);
   }
 
   self->inference = calloc(NUM_SLOTS, sizeof(int));
@@ -156,43 +156,38 @@ void display(int *assignment) {
 }
 
 int **actions(CSP *self, int *state) {
-  int stateLength = 0, i;
+  int varValTuple;
 
   if (actionOptions == NULL) {
     actionOptions = malloc(NUM_VALUES * sizeof(int *));
     checkNULL((void *)actionOptions);
 
-    for (i = 0; i < NUM_VALUES; i++) {
-      actionOptions[i] = calloc(2, sizeof(int));
-      checkNULL((void *)actionOptions[i]);
+    for (varValTuple = 0; varValTuple < NUM_VALUES; varValTuple++) {
+      actionOptions[varValTuple] = calloc(2, sizeof(int));
+      checkNULL((void *)actionOptions[varValTuple]);
     }
   }
 
-  // Check if all assignments have been made
-  for (i = 0; i < NUM_VALUES; i++) {
-    if (state[i] != 0) { stateLength++; }
-  }
-
   // All assignments have been made - no actions to be taken
-  if (stateLength == NUM_SLOTS) {
+  if (count(state) == NUM_SLOTS) {
     return NULL;
   }
   else { // Check for applicable actions and return list (might need to be a queue?)
-    int variable;
-    for (i = 0; i < NUM_SLOTS; i++) {
-      if (state[i] == 0) {
-        variable = self->variables[i];
+    int var, variable;
+    for (var = 0; var < NUM_SLOTS; var++) {
+      if (state[var] == 0) {
+        variable = self->variables[var];
         break;
       }
     }
 
     // Collect non-conlicting possible values and return list
     int value;
-    for (i = 0; i < NUM_VALUES; i++) {
-      value = self->domains[variable][i];
+    for (varValTuple = 0; varValTuple < NUM_VALUES; varValTuple++) {
+      value = self->domains[variable][varValTuple];
       if (nconflicts(self, variable, value, state) == 0) {
-        actionOptions[i][0] = variable;
-        actionOptions[i][1] = value;
+        actionOptions[varValTuple][0] = variable;
+        actionOptions[varValTuple][1] = value;
       }
     }
     return actionOptions;
@@ -205,17 +200,14 @@ int *result(int *state, int *action) {
 }
 
 int goal_test(CSP *self, int *state) {
-  int variablesAssigned = 0, i;
+  int var;
 
-  for (i = 0; i < NUM_SLOTS; i++) {
-    if (state[i] != 0) { variablesAssigned++; }
-  }
   // If all variables haven't been assigned, the game is not complete
-  if (variablesAssigned != NUM_SLOTS) { return 0; }
+  if (count(state) != NUM_SLOTS) { return 0; }
 
-  for (i = 0; i < NUM_SLOTS; i++) {
+  for (var = 0; var < NUM_SLOTS; var++) {
     // If any (Variable, Value) pair has a conflict, the game is not complete
-    if (nconflicts(self, i, state[i], state) != 0) { return 0; }
+    if (nconflicts(self, var, state[var], state) != 0) { return 0; }
   }
 
   // Else, the game is complete!
@@ -225,17 +217,17 @@ int goal_test(CSP *self, int *state) {
 void support_pruning(CSP *self) {
   if (self->curr_domains != NULL) { return; }
 
-  int i, j;
+  int var, val;
 
   self->curr_domains = malloc(NUM_SLOTS * sizeof(int *));
   checkNULL((void *)self->curr_domains);
 
-  for (i = 0; i < NUM_SLOTS; i++) {
-    self->curr_domains[i] = malloc(NUM_VALUES * sizeof(int));
-    checkNULL((void *)self->curr_domains[i]);
+  for (var = 0; var < NUM_SLOTS; var++) {
+    self->curr_domains[var] = malloc(NUM_VALUES * sizeof(int));
+    checkNULL((void *)self->curr_domains[var]);
 
-    for (j = 0; j < NUM_VALUES; j++) {
-      self->curr_domains[i][j] = self->domains[i][j];
+    for (val = 0; val < NUM_VALUES; val++) {
+      self->curr_domains[var][val] = self->domains[var][val];
     } // End values loop
   } // End slots loop
 }
@@ -245,17 +237,17 @@ void suppose(CSP *self, int variable, int value) {
   // Setup curr_domains if necessary
   support_pruning(self);
 
-  int i, checkValue;
-    for (i = 0; i < NUM_VALUES; i++) {
-      checkValue = self->curr_domains[variable][i];
+  int val, checkValue;
+    for (val = 0; val < NUM_VALUES; val++) {
+      checkValue = self->curr_domains[variable][val];
       if (checkValue != value) {
         // Remove any values that do not align with the supposition
-        self->removals[variable][i] = checkValue;
-        self->curr_domains[variable][i] = 0;
+        self->removals[variable][val] = checkValue;
+        self->curr_domains[variable][val] = 0;
       } else {
         // Make sure supposed value is not set in removed "dict"
-        self->removals[variable][i] = 0;
-        self->curr_domains[variable][i] = value; // Redundant, but for consistency's sake
+        self->removals[variable][val] = 0;
+        self->curr_domains[variable][val] = value; // Redundant, but for consistency's sake
       }
     } // End values loop
 }
@@ -269,17 +261,15 @@ void infer_assignment(CSP *self) {
   // Setup curr_domains if necessary
   support_pruning(self);
 
-  int i, j, domainLength, possibleInference;
+  int i, j, possibleInference;
   for (i = 0; i < NUM_SLOTS; i++) {
-    domainLength = 0;
     for (j = 0; j < NUM_VALUES; j++) {
       if (self->curr_domains[i][j] != 0) {
-        domainLength++;
         possibleInference = self->curr_domains[i][j];
       }
     }
 
-    if (domainLength == 1) {
+    if (count(self->curr_domains[i]) == 1) {
       self->inference[i] = possibleInference;
     } else {
       self->inference[i] = 0;
@@ -288,16 +278,30 @@ void infer_assignment(CSP *self) {
 }
 
 
-void restore(CSP *self, int **removals) {
+void restore(CSP *self) {
   int var, val;
   for (var = 0; var < NUM_SLOTS; var++) {
     for (val = 0; val < NUM_VALUES; val++) {
-      if (removals[var][val] != 0) {
+      if (self->removals[var][val] != 0) {
         self->curr_domains[var][val] = val + 1;
+        self->removals[var][val] = 0;
       }
     }
   }
 }
+
+int Soduku_Constraint(int varA, int valA, int varB, int valB) {
+  return ((varA != varB) && (valA == valB));
+}
+
+int count(int *seq) {
+  int i, count = 0;
+  for (i = 0; i < NUM_VALUES; i++) {
+    if (seq[i] != 0) { count++; }
+  } // End values loop
+  return count;
+}
+
 
 void destoryCSP(CSP *self) {
   free(self->variables);

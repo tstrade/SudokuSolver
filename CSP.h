@@ -10,14 +10,22 @@ CSP *initCSP();
 
 // Comparison function to sort {var: [neighbors], ...} in increasing order w/ qsort()
 int sortNeighbors(const void *a, const void *b);
+
+// If any allocation fails, the program should exit immediately
+void checkNULL(void *ptr);
+
 // Initialize the neighbors "dictionary" - allows board size to be mutable
 void initNeighbors(CSP *csp);
+
 // Set a variable (slot on board) to the determined value
 void assign(CSP *self, int variable, int value, int *assignment);
+
 // Remove variable from assignment (DO NOT use for reassigning a variable's value)
 void unassign(int variable, int *assignment);
+
 // Return number of conflicts variable = value has with other variables
 int nconflicts(CSP *self, int variable, int value, int *assignment);
+
 // Show human-readable representation of CSP
 void display(int *assignment);
 
@@ -25,18 +33,25 @@ void display(int *assignment);
 
 // Return list of applicable actions (nonconfliction assignments to an unassigned variable)
 int **actions(CSP *self, int *state);
+
 // Perform action and return new state
 int *result(int *state, int *action);
+
 // Check if Soduku is solved correctly
 int goal_test(CSP *self, int *state);
+
 // Want to be able to prune values from domains
 void support_pruning(CSP *self);
+
 // Accumulate inferences from assuming variable = value
-int **suppose(CSP *self, int variable, int value);
+void suppose(CSP *self, int variable, int value);
+
 // Rule out variable = value
-void prune(CSP *self, int variable, int value, int **removals);
+void prune(CSP *self, int variable, int value);
+
 // Return partial assignment implied by the current inferences
-int *infer_assignment(CSP *self);
+void infer_assignment(CSP *self);
+
 // Undo supposition and all inferences from it
 void restore(CSP *self, int **removals);
 
@@ -44,8 +59,9 @@ void restore(CSP *self, int **removals);
 
 // Apply rules of Soduku
 int Soduku_Constraint(int varA, int valA, int varB, int valB);
+
 // Return number of true instances
-int count(int **seq);
+int count(int *seq);
 
 int getRow(int variable);
 int getCol(int variable);
