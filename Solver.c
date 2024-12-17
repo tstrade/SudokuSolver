@@ -2,6 +2,7 @@
 #include "datastructs.c"
 #include "Solver.h"
 #include <stdlib.h>
+#include <time.h>
 
 #define NUM_VALUES 9
 #define NUM_SLOTS (NUM_VALUES * NUM_VALUES)
@@ -46,6 +47,7 @@ int AC3(Queue *q, CSP *csp) {
         if (isNeighbor && isNotQueued) {
           int item[2] = {var, Xi};
           enqueue(q, item);
+        }
       }
     }
   }
@@ -121,13 +123,34 @@ void get_queue(CSP *csp, Queue *q, int variable) {
   // column, which will help us check our possible solution against our constraint
   int checkNeighbors;
   for (checkNeighbors = 0; checkNeighbors < NUM_NEIGHBORS; checkNeighbors++) {
-    if ((int neighbor = self->csp->neighbors[var][checkNeighbor]) == 1) {
-      int *tuple = [variable, neighbor];
-      enqueue(self->q, tuple);
+    int neighbor = csp->neighbors[variable][checkNeighbors];
+    if (neighbor  == 1) {
+      int tuple[2] = {variable, neighbor};
+      enqueue(q, tuple);
     }
   }
 }
 
-int main() {
+ int main() {
   CSP *csp = initCSP();
+  Queue *q = initQueue(NULL);
+  clock_t start;
+
+  printf("Starting the solve with AC3 procedure...\n");
+  start = clock();
+  AC3(q, csp);
+  printf("AC3 solved the board in %f seconds.\n\n", difftime(start, clock()));
+  display(csp);
+  destroyCSP(csp);
+  destroyQueue(q);
+
+  csp = initCSP();
+  printf("Starting the solve with Backtracking procedure...\n");
+  start = clock();
+  backtracking_search(csp);
+  printf("Backtracking solved the board in %f seconds.\n\n", difftime(start, clock()));
+  display(csp);
+  destroyCSP(csp);
+
+  return 0;
 }
