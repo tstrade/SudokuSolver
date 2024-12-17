@@ -1,5 +1,6 @@
 #include "datastructs.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 struct Queue {
   int *varValTuple;
@@ -12,8 +13,14 @@ struct Queue {
 
 Queue *initQueue(Queue *head) {
   Queue *q;
-  if ((q = malloc(sizeof(Queue))) == NULL) { return NULL; } // Not enough memory!
-  if ((q->varValTuple = calloc(2, sizeof(int))) == NULL) { return NULL; }
+  if ((q = malloc(sizeof(Queue))) == NULL) {
+    fprintf(stderr, "Not enough memory!\n");
+    exit(EXIT_FAILURE);
+  }
+  if ((q->varValTuple = calloc(2, sizeof(int))) == NULL) {
+    fprintf(stderr, "Not enough memory!\n");
+    exit(EXIT_FAILURE);
+  }
   if (head == NULL) {
      q->head = q;
   } else {

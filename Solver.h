@@ -4,13 +4,12 @@
 #include "datastructs.h"
 #include "CSP.h"
 
-int AC3(Solver *self);
-int revise(struct Solver *self, int Xi, int Xj);
-int *backtracking_search(Solver *self);
-int *backtrack(Solver *self);
-int select_unassigned_variable(Solver *self);
-Queue *get_queue(Solver *self, int variable);
-void destroySolver(Solver *self);
+int AC3(Queue *q, CSP *csp);
+int revise(CSP *csp, int Xi, int Xj);
+int *backtracking_search(CSP *csp);
+int *backtrack(CSP *csp);
+int select_unassigned_variable(CSP *csp);
+Queue *get_queue(CSP *csp, Queue *q, int variable);
 
 
 #endif

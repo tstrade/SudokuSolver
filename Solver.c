@@ -1,7 +1,5 @@
 #include "CSP.c"
-#include "CSP.h"
 #include "datastructs.c"
-#include "datastructs.h"
 #include "Solver.h"
 #include <stdlib.h>
 
@@ -14,7 +12,7 @@ int AC3(Queue *q, CSP *csp) {
   if (q->varValTuple[1] == 0) {
     int var;
     for (var = 0; var < NUM_SLOTS; var++) {
-      get_queue(q, var);
+      get_queue(csp, q, var);
     }
   }
   while (q->next != NULL) {
@@ -74,7 +72,7 @@ int revise(CSP *csp, int Xi, int Xj) {
       // If XiValue is in Xi's domain (not 0) and XjValue is in Xj's domain
       // check if ((Xi != Xj) && (XiValue == XjValue)) and set entry equal
       // to result of satisfaction check (0 if false, 1 if true)
-      satisfied = csp->constraints(Xi, XiValue, Xj, XjValue);
+      satisfied = csp->constraint(Xi, XiValue, Xj, XjValue);
       constraintSatisfied[valXj] = satisfied;
     }
 
@@ -99,7 +97,7 @@ int *backtrack(CSP *csp) {
 
     if (conflicts == 0) {
       assign(csp, variable, val);
-      suppose(csp, variable, value);
+      suppose(csp, variable, val);
       int *result = backtrack(csp);
 
       if (result != NULL) { return result; }
@@ -110,6 +108,7 @@ int *backtrack(CSP *csp) {
 }
 
 int select_unassigned_variable(CSP *csp) {
+  int var;
   for (var = 0; var < NUM_SLOTS; var++) {
     if (csp->assignment[var] == 0) { return var; } // Return first unassigned variable
   }
@@ -117,8 +116,7 @@ int select_unassigned_variable(CSP *csp) {
 }
 
 
-
-void get_queue(Solver *self, int variable) {
+void get_queue(CSP *csp, Queue *q, int variable) {
   // We want to find each variable-variable pair that is in the same row and/or
   // column, which will help us check our possible solution against our constraint
   int checkNeighbors;

@@ -66,7 +66,7 @@ CSP *initCSP() {
   self->variables = malloc(NUM_SLOTS * sizeof(int));
   checkNULL((void *)self->variables);
 
-  for (var = 0; var < NUM_SLOTS; i++) { self->variables[var] = var; }
+  for (var = 0; var < NUM_SLOTS; var++) { self->variables[var] = var; }
 
   // For each variable, there is a list of possible entries ranging from 1 to 9
   self->domains = malloc(NUM_SLOTS * sizeof(int *));
@@ -265,9 +265,9 @@ void infer_assignment(CSP *self) {
   // Setup curr_domains if necessary
   support_pruning(self);
 
-  int i, j, possibleInference;
-  for (i = 0; i < NUM_SLOTS; i++) {
-    for (j = 0; j < NUM_VALUES; j++) {
+  int possibleInference;
+  for (int i = 0; i < NUM_SLOTS; i++) {
+    for (int j = 0; j < NUM_VALUES; j++) {
       if (self->curr_domains[i][j] != 0) {
         possibleInference = self->curr_domains[i][j];
       }
@@ -299,8 +299,8 @@ int Soduku_Constraint(int varA, int valA, int varB, int valB) {
 }
 
 int count(int *seq) {
-  int i, count = 0;
-  for (i = 0; i < NUM_VALUES; i++) {
+  int count = 0;
+  for (int i = 0; i < NUM_VALUES; i++) {
     if (seq[i] != 0) { count++; }
   } // End values loop
   return count;
@@ -316,14 +316,13 @@ int getCol(int variable) {
 
 void destoryCSP(CSP *self) {
   free(self->variables);
-  int i;
-  for (i = 0; i < NUM_SLOTS; i++) {
+  for (int i = 0; i < NUM_SLOTS; i++) {
     free(self->domains[i]);
     free(self->neighbors[i]);
     free(self->curr_domains[i]);
     free(self->removals[i]);
   }
-  for (i = 0; i < NUM_VALUES; i++) {
+  for (int i = 0; i < NUM_VALUES; i++) {
     free(actionOptions[i]);
   }
 
