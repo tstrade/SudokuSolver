@@ -18,27 +18,27 @@ void checkNULL(void *ptr);
 void initNeighbors(CSP *csp);
 
 // Set a variable (slot on board) to the determined value
-void assign(CSP *self, int variable, int value, int *assignment);
+void assign(CSP *self, int variable, int value);
 
 // Remove variable from assignment (DO NOT use for reassigning a variable's value)
-void unassign(int variable, int *assignment);
+void unassign(CSP *self, int variable);
 
 // Return number of conflicts variable = value has with other variables
-int nconflicts(CSP *self, int variable, int value, int *assignment);
+int nconflicts(CSP *self, int variable, int value);
 
 // Show human-readable representation of CSP
-void display(int *assignment);
+void display(CSP *self);
 
 // ************Following methods are for tree / graph traversal************** //
 
 // Return list of applicable actions (nonconfliction assignments to an unassigned variable)
-int **actions(CSP *self, int *state);
+int **actions(CSP *self);
 
 // Perform action and return new state
-int *result(int *state, int *action);
+int *result(CSP *self, int *action);
 
 // Check if Soduku is solved correctly
-int goal_test(CSP *self, int *state);
+int goal_test(CSP *self);
 
 // Want to be able to prune values from domains
 void support_pruning(CSP *self);
@@ -53,7 +53,7 @@ void prune(CSP *self, int variable, int value);
 void infer_assignment(CSP *self);
 
 // Undo supposition and all inferences from it
-void restore(CSP *self, int **removals);
+void restore(CSP *self);
 
 // ************Other************** //
 
