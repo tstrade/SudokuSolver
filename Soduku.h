@@ -2,7 +2,7 @@
 
 typedef struct Soduku Soduku;
 
-Soduku *initBoard(CSP *csp, char *initialPositions);
+Soduku *initBoard(char *initialPositions);
 void showVars(Soduku *self);
 void showCurrentDomains(Soduku *self);
 void showVariableDomain(Soduku *self, int variable);
