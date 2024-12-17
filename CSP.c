@@ -17,6 +17,7 @@ struct CSP {
   int **curr_domains;
   int **removals;
   int *inference;
+  int *assignment;
   int (*constraint)(int, int, int, int);
 };
 
@@ -105,6 +106,9 @@ CSP *initCSP() {
   self->inference = calloc(NUM_SLOTS, sizeof(int));
   checkNULL((void *)self->inference);
 
+  self->assignment = calloc(NUM_SLOTS, sizeof(int));
+  checkNULL((void *)self->inference);
+
   // Assign the Soduku Rules to the CSP constaint function
   self->constraint = Soduku_Constraint;
 
@@ -115,37 +119,37 @@ CSP *initCSP() {
   return self;
 }
 
-void assign(CSP *self, int variable, int value, int *assignment) {
-  assignment[variable] = value;
+void assign(CSP *self, int variable, int value) {
+  self->assignment[variable] = value;
   self->nassigns++;
 }
 
-void unassign(int variable, int *assignment) {
-  assignment[variable] = 0;
+void unassign(CSP *self, int variable) {
+  self->assignment[variable] = 0;
 }
 
 
-int nconflicts(CSP *self, int variable, int value, int *assignment){
+int nconflicts(CSP *self, int variable, int value){
   int n, conflicts = 0;
 
   for (n = 0; n < NUM_NEIGHBORS; n++) {
     int neighbor = self->neighbors[variable][n];
-    conflicts += self->constraint(variable, value, neighbor, assignment[neighbor]);
+    conflicts += self->constraint(variable, value, neighbor, self->assignment[neighbor]);
   }
   return conflicts;
 }
 
-void display(int *assignment) {
+void display(CSP *self) {
   int slot, value;
 
   for (slot = 0; slot <= (NUM_SLOTS - NUM_VALUES); slot++) {
-    value = assignment[slot];
+    value = self->assignment[slot];
     if (slot % (NUM_SLOTS / 3) == 0) { // Only need two dividers (board is in thirds)
       printf(" %d |", value);
     }
     if ((slot % NUM_VALUES) == (NUM_VALUES - 1)) {
       // end of row
-      printf(" %d\n", assignment[slot]);
+      printf(" %d\n", value);
       // Only need two dividers (board is in thirds)
       printf("----------+-----------+----------\n");
     } else {
@@ -155,7 +159,7 @@ void display(int *assignment) {
   printf("\n\n\n");
 }
 
-int **actions(CSP *self, int *state) {
+int **actions(CSP *self) {
   int varValTuple;
 
   if (actionOptions == NULL) {
@@ -169,13 +173,13 @@ int **actions(CSP *self, int *state) {
   }
 
   // All assignments have been made - no actions to be taken
-  if (count(state) == NUM_SLOTS) {
+  if (count(self->assignment) == NUM_SLOTS) {
     return NULL;
   }
   else { // Check for applicable actions and return list (might need to be a queue?)
     int var, variable;
     for (var = 0; var < NUM_SLOTS; var++) {
-      if (state[var] == 0) {
+      if (self->assignment[var] == 0) {
         variable = self->variables[var];
         break;
       }
@@ -185,7 +189,7 @@ int **actions(CSP *self, int *state) {
     int value;
     for (varValTuple = 0; varValTuple < NUM_VALUES; varValTuple++) {
       value = self->domains[variable][varValTuple];
-      if (nconflicts(self, variable, value, state) == 0) {
+      if (nconflicts(self, variable, value) == 0) {
         actionOptions[varValTuple][0] = variable;
         actionOptions[varValTuple][1] = value;
       }
@@ -194,20 +198,20 @@ int **actions(CSP *self, int *state) {
   }
 }
 
-int *result(int *state, int *action) {
-  state[action[0]] = action[1];
-  return state;
+int *result(CSP *self, int *action) {
+  self->assignment[action[0]] = action[1];
+  return self->assignment;
 }
 
-int goal_test(CSP *self, int *state) {
+int goal_test(CSP *self) {
   int var;
 
   // If all variables haven't been assigned, the game is not complete
-  if (count(state) != NUM_SLOTS) { return 0; }
+  if (count(self->assignment) != NUM_SLOTS) { return 0; }
 
   for (var = 0; var < NUM_SLOTS; var++) {
     // If any (Variable, Value) pair has a conflict, the game is not complete
-    if (nconflicts(self, var, state[var], state) != 0) { return 0; }
+    if (nconflicts(self, var, self->assignment[var]) != 0) { return 0; }
   }
 
   // Else, the game is complete!
@@ -329,6 +333,7 @@ void destoryCSP(CSP *self) {
   free(self->neighbors);
   free(self->curr_domains);
   free(self->inference);
+  free(self->assignment);
 
   free(self);
 }
