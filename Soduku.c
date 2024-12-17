@@ -1,8 +1,9 @@
-#include "CSP.c"
+#include "Solver.c"
 #include "Soduku.h"
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define NUM_VALUES 9
 #define NUM_SLOTS (NUM_VALUES * NUM_VALUES)
@@ -77,4 +78,31 @@ void showRemovals(Soduku *self) {
 void destroySoduku(Soduku *self) {
   destroyCSP(self->csp);
   free(self);
+}
+
+int main(int argc, char *argv[]) {
+  if (argc != 2) { return -1; }
+  if (strlen(argv[1]) != NUM_SLOTS) { return -1; }
+
+  Soduku *board = initBoard(argv[1]);
+  Queue *q = initQueue(NULL);
+  clock_t start;
+
+  printf("Starting the solve with AC3 procedure...\n");
+  start = clock();
+  AC3(q, board->csp);
+  printf("AC3 solved the board in %f seconds.\n\n", difftime(start, clock()));
+  display(board->csp);
+  destroySoduku(board);
+  destroyQueue(q);
+
+  board = initBoard(argv[1]);
+  printf("Starting the solve with Backtracking procedure...\n");
+  start = clock();
+  backtracking_search(board->csp);
+  printf("Backtracking solved the board in %f seconds.\n\n", difftime(start, clock()));
+  display(board->csp);
+  destroySoduku(board);
+
+  return 0;
 }

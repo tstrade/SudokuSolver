@@ -130,27 +130,3 @@ void get_queue(CSP *csp, Queue *q, int variable) {
     }
   }
 }
-
- int main() {
-  CSP *csp = initCSP();
-  Queue *q = initQueue(NULL);
-  clock_t start;
-
-  printf("Starting the solve with AC3 procedure...\n");
-  start = clock();
-  AC3(q, csp);
-  printf("AC3 solved the board in %f seconds.\n\n", difftime(start, clock()));
-  display(csp);
-  destroyCSP(csp);
-  destroyQueue(q);
-
-  csp = initCSP();
-  printf("Starting the solve with Backtracking procedure...\n");
-  start = clock();
-  backtracking_search(csp);
-  printf("Backtracking solved the board in %f seconds.\n\n", difftime(start, clock()));
-  display(csp);
-  destroyCSP(csp);
-
-  return 0;
-}
