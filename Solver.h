@@ -1,5 +1,5 @@
-#ifndef _SOLVER_H
-#define _SOLVER_H
+#ifndef SOLVER_H
+#define SOLVER_H
 
 #include "datastructs.h"
 #include "CSP.h"

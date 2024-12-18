@@ -1,8 +1,7 @@
+#include "Solver.h"
 #include "CSP.c"
 #include "datastructs.c"
-#include "Solver.h"
 #include <stdlib.h>
-#include <time.h>
 
 #define NUM_VALUES 9
 #define NUM_SLOTS (NUM_VALUES * NUM_VALUES)

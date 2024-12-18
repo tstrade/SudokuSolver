@@ -7,7 +7,7 @@
 #define NUM_SLOTS (NUM_VALUES * NUM_VALUES)
 #define NUM_NEIGHBORS (2 * (NUM_VALUES - 1))
 
-extern int **actionOptions;
+ int **actionOptions;
 
 struct CSP {
   int *variables;
@@ -54,8 +54,8 @@ void initNeighbors(CSP *csp) {
   }
 }
 
-CSP *initCSP() {
-  CSP *self = malloc(sizeof(CSP));
+CSP *initCSP(CSP *self) {
+  self = malloc(sizeof(CSP));
   // Return NULL if not enough memory for the CSP structure
   checkNULL((void *)self);
 
@@ -87,7 +87,7 @@ CSP *initCSP() {
   self->neighbors = malloc(NUM_SLOTS * sizeof(int *));
   checkNULL((void *)self->neighbors);
 
-  for (val = 0; val < NUM_SLOTS; val++) {
+  for (var = 0; var < NUM_SLOTS; var++) {
     self->neighbors[var] = malloc(NUM_NEIGHBORS * sizeof(int));
     checkNULL((void *)self->neighbors[var]);
   }
@@ -140,23 +140,22 @@ int nconflicts(CSP *self, int variable, int value){
 }
 
 void display(CSP *self) {
-  int slot, value;
+  int slot, *assignment;
 
-  for (slot = 0; slot <= (NUM_SLOTS - NUM_VALUES); slot++) {
-    value = self->assignment[slot];
-    if (slot % (NUM_SLOTS / 3) == 0) { // Only need two dividers (board is in thirds)
-      printf(" %d |", value);
-    }
-    if ((slot % NUM_VALUES) == (NUM_VALUES - 1)) {
-      // end of row
-      printf(" %d\n", value);
+  for (slot = 0; slot < NUM_SLOTS; slot++) {
+    assignment = self->assignment;
+    printf("%d . %d . %d | %d . %d . %d | %d . %d . %d\n",
+    assignment[slot], assignment[slot + 1], assignment[slot + 2],
+    assignment[slot + 3], assignment[slot + 4], assignment[slot + 5],
+    assignment[slot + 6], assignment[slot + 7], assignment[slot + 8]);
+
+    if (slot == NUM_VALUES * 2 || slot == NUM_VALUES * 5) {
       // Only need two dividers (board is in thirds)
       printf("----------+-----------+----------\n");
-    } else {
-      printf(" %d .", value);
     }
+
   }
-  printf("\n\n\n");
+  printf("\n\n");
 }
 
 int **actions(CSP *self) {
@@ -242,18 +241,18 @@ void suppose(CSP *self, int variable, int value) {
   support_pruning(self);
 
   int val, checkValue;
-    for (val = 0; val < NUM_VALUES; val++) {
-      checkValue = self->curr_domains[variable][val];
-      if (checkValue != value) {
-        // Remove any values that do not align with the supposition
-        self->removals[variable][val] = checkValue;
-        self->curr_domains[variable][val] = 0;
-      } else {
-        // Make sure supposed value is not set in removed "dict"
-        self->removals[variable][val] = 0;
-        self->curr_domains[variable][val] = value; // Redundant, but for consistency's sake
-      }
-    } // End values loop
+  for (val = 0; val < NUM_VALUES; val++) {
+    checkValue = self->curr_domains[variable][val];
+    if (checkValue != value) {
+      // Remove any values that do not align with the supposition
+      self->removals[variable][val] = checkValue;
+      self->curr_domains[variable][val] = 0;
+    } else {
+      // Make sure supposed value is not set in removed "dict"
+      self->removals[variable][val] = 0;
+      self->curr_domains[variable][val] = value; // Redundant, but for consistency's sake
+    }
+  } // End values loop
 }
 
 void prune(CSP *self, int variable, int value) {
@@ -266,8 +265,9 @@ void infer_assignment(CSP *self) {
   support_pruning(self);
 
   int possibleInference;
-  for (int i = 0; i < NUM_SLOTS; i++) {
-    for (int j = 0; j < NUM_VALUES; j++) {
+  int i, j;
+  for (i = 0; i < NUM_SLOTS; i++) {
+    for (j = 0; j < NUM_VALUES; j++) {
       if (self->curr_domains[i][j] != 0) {
         possibleInference = self->curr_domains[i][j];
       }
@@ -314,15 +314,16 @@ int getCol(int variable) {
   return variable % NUM_VALUES;
 }
 
-void destoryCSP(CSP *self) {
+void destroyCSP(CSP *self) {
   free(self->variables);
-  for (int i = 0; i < NUM_SLOTS; i++) {
+  int i;
+  for (i = 0; i < NUM_SLOTS; i++) {
     free(self->domains[i]);
     free(self->neighbors[i]);
     free(self->curr_domains[i]);
     free(self->removals[i]);
   }
-  for (int i = 0; i < NUM_VALUES; i++) {
+  for (i = 0; i < NUM_VALUES; i++) {
     free(actionOptions[i]);
   }
 

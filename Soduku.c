@@ -1,9 +1,14 @@
+#include "Solver.h"
+#include "CSP.h"
+#include "datastructs.h"
 #include "Solver.c"
 #include "Soduku.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+
 
 #define NUM_VALUES 9
 #define NUM_SLOTS (NUM_VALUES * NUM_VALUES)
@@ -18,9 +23,11 @@ struct Soduku {
   void (*destroySoduku)(Soduku *self);
 };
 
-Soduku *initBoard(char *initialPositions) {
-  Soduku *self = malloc(sizeof(Soduku));
-  self->csp = initCSP();
+Soduku *initBoard(Soduku *self, char *initialPositions) {
+  self = malloc(sizeof(Soduku));
+  checkNULL((void *)self);
+  self->csp = initCSP(self->csp);
+  checkNULL((void *)self->csp);
   support_pruning(self->csp);
 
   int variable;
@@ -81,10 +88,19 @@ void destroySoduku(Soduku *self) {
 }
 
 int main(int argc, char *argv[]) {
-  if (argc != 2) { return -1; }
-  if (strlen(argv[1]) != NUM_SLOTS) { return -1; }
+  if (argc != 2) {
+    fprintf(stderr, "Incorrect number of arguments. Make sure there are no spaces in the board setup\n");
+    return -1;
+  }
 
-  Soduku *board = initBoard(argv[1]);
+  if (strlen(argv[1]) != NUM_SLOTS) {
+    fprintf(stderr, "Incorrect argument size - should be a string of %d characters, with blanks/spaces represented by 0's or .'s\n", NUM_SLOTS);
+    return -1;
+  }
+
+  Soduku *board = NULL;
+  board = initBoard(board, argv[1]);
+
   Queue *q = initQueue(NULL);
   clock_t start;
 
@@ -96,7 +112,7 @@ int main(int argc, char *argv[]) {
   destroySoduku(board);
   destroyQueue(q);
 
-  board = initBoard(argv[1]);
+  board = initBoard(board, argv[1]);
   printf("Starting the solve with Backtracking procedure...\n");
   start = clock();
   backtracking_search(board->csp);
