@@ -112,7 +112,7 @@ int main(int argc, char *argv[]) {
   printf("AC3 solved the board in %f seconds.\n\n", difftime(start, clock()));
   display(board->csp);
   destroySoduku(board);
-  destroyQueue(q);
+  //destroyQueue(q);
 
   board = initBoard(board, argv[1]);
   printf("Starting the solve with Backtracking procedure...\n");

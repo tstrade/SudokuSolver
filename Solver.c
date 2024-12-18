@@ -17,7 +17,7 @@ int AC3(Queue *q, CSP *csp) {
   }
   while (q->next != NULL) {
     int Xi = q->varValTuple[0], Xj = q->varValTuple[1];
-    q = dequeue(q);
+    q = *(dequeue(&q));
 
     if (revise(csp, Xi, Xj) == 1) {
       if (count(csp->curr_domains[Xi]) == 0) { return 0; }

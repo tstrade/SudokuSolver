@@ -50,11 +50,11 @@ void enqueue(Queue *q, int *item) {
   q->next->head = head;
 }
 
-Queue *dequeue(Queue *q) {
-  Queue *oldQ = q;
-  q = q->next;
+Queue **dequeue(Queue **q) {
+  Queue *oldQ = *q;
+  q = &(*q)->next;
 
-  q = processQueue(q);
+  *q = processQueue(*q);
   destroyQueue(oldQ);
   return q;
 }
