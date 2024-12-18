@@ -85,6 +85,7 @@ void showRemovals(Soduku *self) {
 void destroySoduku(Soduku *self) {
   destroyCSP(self->csp);
   free(self);
+  self = NULL;
 }
 
 int main(int argc, char *argv[]) {
@@ -101,7 +102,8 @@ int main(int argc, char *argv[]) {
   Soduku *board = NULL;
   board = initBoard(board, argv[1]);
 
-  Queue *q = initQueue(NULL);
+  Queue *q = NULL;
+  q = initQueue(q, NULL);
   clock_t start;
 
   printf("Starting the solve with AC3 procedure...\n");

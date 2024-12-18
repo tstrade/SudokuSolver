@@ -11,16 +11,20 @@ struct Queue {
   int *(*peek)(Queue *q);
 };
 
-Queue *initQueue(Queue *head) {
-  Queue *q;
-  if ((q = malloc(sizeof(Queue))) == NULL) {
+Queue *initQueue(Queue *q, Queue *head) {
+  q = malloc(sizeof(Queue));
+
+  if (q == NULL) {
     fprintf(stderr, "Not enough memory!\n");
     exit(EXIT_FAILURE);
   }
-  if ((q->varValTuple = calloc(2, sizeof(int))) == NULL) {
+
+  q->varValTuple = calloc(2, sizeof(int));
+  if (q->varValTuple  == NULL) {
     fprintf(stderr, "Not enough memory!\n");
     exit(EXIT_FAILURE);
   }
+
   if (head == NULL) {
      q->head = q;
   } else {
@@ -40,21 +44,30 @@ void enqueue(Queue *q, int *item) {
   while (q->next != NULL) { // Iterate to the end of the queue
     q = q->next;
   }
-  q->next = initQueue(head); // Initialize next item in queue
+
+  q->next = initQueue(q->next, head); // Initialize next item in queue
   q->next->varValTuple = item; // Set tuple value
   q->next->head = head;
 }
 
 Queue *dequeue(Queue *q) {
-  Queue *newHead = q->next;
-  Queue *iterQ = q->next;
-  newHead->head = newHead; // Update the front of the queue
-  destroyQueue(q);
-  while (iterQ->next != NULL) { // Update for the rest of the queue
-    iterQ->next->head = newHead;
+  Queue *oldQ = q;
+  q = q->next;
+
+  q = processQueue(q);
+  destroyQueue(oldQ);
+  return q;
+}
+
+Queue *processQueue(Queue *q) {
+  Queue *iterQ = q;
+
+  while (iterQ != NULL) { // Update for the rest of the queue
+    iterQ->head = q;
     iterQ = iterQ->next;
   }
-  return newHead;
+
+  return q;
 }
 
 int *peek(Queue *q) {
@@ -64,5 +77,7 @@ int *peek(Queue *q) {
 
 void destroyQueue(Queue *q) {
   free(q->varValTuple);
+  q->varValTuple = NULL;
   free(q);
+  q = NULL;
 }

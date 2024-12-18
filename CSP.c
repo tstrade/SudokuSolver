@@ -316,6 +316,7 @@ int getCol(int variable) {
 
 void destroyCSP(CSP *self) {
   free(self->variables);
+
   int i;
   for (i = 0; i < NUM_SLOTS; i++) {
     free(self->domains[i]);
@@ -328,6 +329,7 @@ void destroyCSP(CSP *self) {
   }
 
   free(actionOptions);
+  actionOptions = NULL;
   free(self->removals);
   free(self->domains);
   free(self->neighbors);
@@ -336,4 +338,5 @@ void destroyCSP(CSP *self) {
   free(self->assignment);
 
   free(self);
+  self = NULL;
 }
