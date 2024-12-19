@@ -32,7 +32,7 @@ void checkNULL(void *ptr) {
   }
 }
 
-void initNeighbors(CSP *csp) {
+void initNeighbors(CSP **csp) {
   int var, potentialNeighbor, neighborX, row;
   // For each variable (slot on the board), we want to know what other
   // variables (slots) are in their row / column (macros allow this to be adjustable size)
@@ -42,90 +42,90 @@ void initNeighbors(CSP *csp) {
 
     while (neighborX < NUM_NEIGHBORS) {
       if (potentialNeighbor != var) {
-        csp->neighbors[var][neighborX] = potentialNeighbor;
+        (*csp)->neighbors[var][neighborX] = potentialNeighbor;
         neighborX++;
       }
-      csp->neighbors[var][neighborX] = (var % NUM_VALUES) + (NUM_VALUES * ++row);
+      (*csp)->neighbors[var][neighborX] = (var % NUM_VALUES) + (NUM_VALUES * ++row);
       neighborX++;
       potentialNeighbor++;
     }
     // Not necessary, but sorting can help with visuals later on
-    qsort(csp->neighbors[var], NUM_NEIGHBORS, sizeof(int), sortNeighbors);
+    qsort((*csp)->neighbors[var], NUM_NEIGHBORS, sizeof(int), sortNeighbors);
   }
 }
 
-CSP *initCSP(CSP *self) {
-  self = malloc(sizeof(CSP));
+CSP *initCSP(CSP **self) {
+  *self = malloc(sizeof(CSP));
   // Return NULL if not enough memory for the CSP structure
-  checkNULL((void *)self);
+  checkNULL((void *)(*self));
 
   int var, val;
 
   // List of atomic variables - for Soduku, it will be the
   // indexes of the 1D array representation of the board
-  self->variables = malloc(NUM_SLOTS * sizeof(int));
-  checkNULL((void *)self->variables);
+  (*self)->variables = malloc(NUM_SLOTS * sizeof(int));
+  checkNULL((void *)(*self)->variables);
 
-  for (var = 0; var < NUM_SLOTS; var++) { self->variables[var] = var; }
+  for (var = 0; var < NUM_SLOTS; var++) { (*self)->variables[var] = var; }
 
   // For each variable, there is a list of possible entries ranging from 1 to 9
-  self->domains = malloc(NUM_SLOTS * sizeof(int *));
-  checkNULL((void *)self->domains);
+  (*self)->domains = malloc(NUM_SLOTS * sizeof(int *));
+  checkNULL((void *)(*self)->domains);
 
   for (var = 0; var < NUM_SLOTS; var++) {
-    self->domains[var] = malloc(NUM_VALUES * sizeof(int));
-    checkNULL((void *)self->domains[var]);
+    (*self)->domains[var] = malloc(NUM_VALUES * sizeof(int));
+    checkNULL((void *)(*self)->domains[var]);
 
     // Fill domains with appropriate range of values
     for (val = 0; val < NUM_VALUES; val++) {
-      self->domains[var][val] = val + 1;
+      (*self)->domains[var][val] = val + 1;
     }
   }
 
   // For each variable, there is a list of variables that adhere to the constraints
   // 8 neighbors in the same row + 8 neighbors in the same column = 16 neighbors
-  self->neighbors = malloc(NUM_SLOTS * sizeof(int *));
-  checkNULL((void *)self->neighbors);
+  (*self)->neighbors = malloc(NUM_SLOTS * sizeof(int *));
+  checkNULL((void *)(*self)->neighbors);
 
   for (var = 0; var < NUM_SLOTS; var++) {
-    self->neighbors[var] = malloc(NUM_NEIGHBORS * sizeof(int));
-    checkNULL((void *)self->neighbors[var]);
+    (*self)->neighbors[var] = malloc(NUM_NEIGHBORS * sizeof(int));
+    checkNULL((void *)(*self)->neighbors[var]);
   }
 
   // As we make suppositions about variable assignments, we want to be
   // able to backtrack in case the supposition ends up incorrect
   // This "dict" will be cleared each time suppose() is called
-  self->removals = malloc(NUM_SLOTS * sizeof(int *));
-  checkNULL((void *)self->removals);
+  (*self)->removals = malloc(NUM_SLOTS * sizeof(int *));
+  checkNULL((void *)(*self)->removals);
 
   for (val = 0; val < NUM_VALUES; val++) {
-    self->removals[val] = calloc(NUM_VALUES, sizeof(int));
-    checkNULL((void *)self->removals[val]);
+    (*self)->removals[val] = calloc(NUM_VALUES, sizeof(int));
+    checkNULL((void *)(*self)->removals[val]);
   }
 
-  self->inference = calloc(NUM_SLOTS, sizeof(int));
-  checkNULL((void *)self->inference);
+  (*self)->inference = calloc(NUM_SLOTS, sizeof(int));
+  checkNULL((void *)(*self)->inference);
 
-  self->assignment = calloc(NUM_SLOTS, sizeof(int));
-  checkNULL((void *)self->inference);
+  (*self)->assignment = calloc(NUM_SLOTS, sizeof(int));
+  checkNULL((void *)(*self)->inference);
 
   // Assign the Soduku Rules to the CSP constaint function
-  self->constraint = Soduku_Constraint;
+  (*self)->constraint = Soduku_Constraint;
 
-  self->nassigns = 0;
+  (*self)->nassigns = 0;
 
   initNeighbors(self);
 
-  return self;
+  return *self;
 }
 
-void assign(CSP *self, int variable, int value) {
-  self->assignment[variable] = value;
-  self->nassigns++;
+void assign(CSP **self, int variable, int value) {
+  (*self)->assignment[variable] = value;
+  (*self)->nassigns++;
 }
 
-void unassign(CSP *self, int variable) {
-  self->assignment[variable] = 0;
+void unassign(CSP **self, int variable) {
+  (*self)->assignment[variable] = 0;
 }
 
 

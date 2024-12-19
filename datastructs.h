@@ -3,8 +3,8 @@
 
 typedef struct Queue Queue;
 Queue *initQueue(Queue **queue);
-void enqueue(Queue **q, int *item);
-void dequeue(Queue **q, int *item);
+void enqueue(Queue **q, int **item);
+void dequeue(Queue **q, int **item);
 int *peek(Queue *q);
 int isFull(Queue *q);
 int isEmpty(Queue *q);

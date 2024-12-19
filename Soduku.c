@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
 
   printf("Starting the solve with AC3 procedure...\n");
   start = clock();
-  AC3(q, board->csp);
+  AC3(&q, &board->csp);
   printf("AC3 solved the board in %f seconds.\n\n", difftime(start, clock()));
   display(board->csp);
   destroySoduku(&board);
@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
   board = initBoard(&board, argv[1]);
   printf("Starting the solve with Backtracking procedure...\n");
   start = clock();
-  backtracking_search(board->csp);
+  backtracking_search(&board->csp);
   printf("Backtracking solved the board in %f seconds.\n\n", difftime(start, clock()));
   display(board->csp);
   destroySoduku(&board);

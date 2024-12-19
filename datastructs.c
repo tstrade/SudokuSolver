@@ -43,22 +43,22 @@ Queue *initQueue(Queue **q) {
   return (*q);
 }
 
-void enqueue(Queue **q, int *item) {
-  (*q)->currentSize += 1;
+void enqueue(Queue **q, int **item) {
+  (*q)->currSize += 1;
   
   int nextIndex = ((*q)->tail + 1) % (*q)->maxSize;
-  (*q)->tuples[nextIndex][0] = item[0];
-  (*q)->tuples[nextIndex][1] = item[1];
+  (*q)->tuples[nextIndex][0] = (*item)[0];
+  (*q)->tuples[nextIndex][1] = (*item)[1];
 
   (*q)->tail = nextIndex;
 }
 
-void dequeue(Queue **q, int *item) {
-  item[0] = (*q)->tuples[(*q)->head][0];
-  item[1] = (*q)->tuples[(*q)->head][1];
+void dequeue(Queue **q, int **item) {
+  (*item)[0] = (*q)->tuples[(*q)->head][0];
+  (*item)[1] = (*q)->tuples[(*q)->head][1];
   
   (*q)->head += 1;
-  (*q)->currentSize -= 1;
+  (*q)->currSize -= 1;
 }
 
 int *peek(Queue *q) {
@@ -66,15 +66,15 @@ int *peek(Queue *q) {
 }
 
 int isFull(Queue *q) {
-  return (q->currentSize >= THRESHOLD * q->maxSize);
+  return (q->currSize >= THRESHOLD * q->maxSize);
 }
 
 int isEmpty(Queue *q) {
-  return (q->currentSize == 0);
+  return (q->currSize == 0);
 }
 
 void resizeQueue(Queue **q) {
-  int newSize = (*q)->maxSize;
+  int newSize = (*q)->maxSize * 2;
   (*q)->tuples = realloc((*q)->tuples, newSize * sizeof(int *));
   if ((*q)->tuples == NULL) {
     fprintf(stderr, "Realloc failed on resizing!\n");
@@ -89,7 +89,8 @@ void resizeQueue(Queue **q) {
       exit(EXIT_FAILURE);
     }
   }
-  (*q)->maxSize *= 2;
+  
+  (*q)->maxSize = newSize;
 }
 
 void destroyQueue(Queue **q) {
