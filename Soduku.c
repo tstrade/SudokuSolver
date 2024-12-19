@@ -20,25 +20,24 @@ struct Soduku {
   void (*showCurrentDomains)(Soduku *self);
   void (*showVariableDomain)(Soduku *self, int variable);
   void (*showRemovals)(Soduku *self);
-  void (*destroySoduku)(Soduku *self);
 };
 
-Soduku *initBoard(Soduku *self, char *initialPositions) {
-  self = malloc(sizeof(Soduku));
-  checkNULL((void *)self);
-  self->csp = initCSP(self->csp);
-  checkNULL((void *)self->csp);
-  support_pruning(self->csp);
+Soduku *initBoard(Soduku **self, char *initialPositions) {
+  *self = malloc(sizeof(Soduku));
+  checkNULL((void *)(*self));
+  (*self)->csp = initCSP((*self)->csp);
+  checkNULL((void *)(*self)->csp);
+  support_pruning((*self)->csp);
 
   int variable;
   for (variable = 0; variable < NUM_SLOTS; variable++) {
     if (initialPositions[variable] == '.') {
       initialPositions[variable] = '0';
     }
-    self->csp->assignment[variable] = (int)initialPositions[variable] - 48;
+    (*self)->csp->assignment[variable] = (int)initialPositions[variable] - 48;
   }
 
-  return self;
+  return *self;
 }
 
 void showVars(Soduku *self) {
@@ -82,10 +81,10 @@ void showRemovals(Soduku *self) {
   }
 }
 
-void destroySoduku(Soduku *self) {
-  destroyCSP(self->csp);
-  free(self);
-  self = NULL;
+void destroySoduku(Soduku **self) {
+  destroyCSP((*self)->csp);
+  free((*self));
+  *self = NULL;
 }
 
 int main(int argc, char *argv[]) {
@@ -100,10 +99,10 @@ int main(int argc, char *argv[]) {
   }
 
   Soduku *board = NULL;
-  board = initBoard(board, argv[1]);
+  board = initBoard(&board, argv[1]);
 
   Queue *q = NULL;
-  q = initQueue(q, NULL);
+  q = initQueue(&q);
   clock_t start;
 
   printf("Starting the solve with AC3 procedure...\n");
@@ -111,16 +110,16 @@ int main(int argc, char *argv[]) {
   AC3(q, board->csp);
   printf("AC3 solved the board in %f seconds.\n\n", difftime(start, clock()));
   display(board->csp);
-  destroySoduku(board);
-  //destroyQueue(q);
+  destroySoduku(&board);
+  destroyQueue(&q);
 
-  board = initBoard(board, argv[1]);
+  board = initBoard(&board, argv[1]);
   printf("Starting the solve with Backtracking procedure...\n");
   start = clock();
   backtracking_search(board->csp);
   printf("Backtracking solved the board in %f seconds.\n\n", difftime(start, clock()));
   display(board->csp);
-  destroySoduku(board);
+  destroySoduku(&board);
 
   return 0;
 }
