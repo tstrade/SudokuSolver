@@ -2,82 +2,105 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#define INIT_SIZE 100
+#define THRESHOLD 0.85
+
 struct Queue {
-  int *varValTuple;
-  Queue *head;
-  Queue *next;
-  void (*enqueue)(Queue *q, int *item);
-  Queue *(*dequeue)(Queue *q);
-  int *(*peek)(Queue *q);
+  int **tuples;
+  int maxSize;
+  int currSize;
+  int head;
+  int tail;
 };
 
-Queue *initQueue(Queue *q, Queue *head) {
-  q = malloc(sizeof(Queue));
-
-  if (q == NULL) {
-    fprintf(stderr, "Not enough memory!\n");
+Queue *initQueue(Queue **q) {
+  (*q) = malloc(sizeof(Queue));
+  if ((*q) == NULL) {
+    fprintf(stderr, "Malloc failed on Queue struct!\n");
     exit(EXIT_FAILURE);
   }
 
-  q->varValTuple = calloc(2, sizeof(int));
-  if (q->varValTuple  == NULL) {
-    fprintf(stderr, "Not enough memory!\n");
+  (*q)->maxSize = INIT_SIZE;
+  (*q)->currSize = 0;
+  (*q)->head = 0;
+  (*q)->tail = 0;
+
+  (*q)->tuples = malloc(INIT_SIZE * sizeof(int *));
+  if ((*q)->tuples == NULL) {
+    fprintf(stderr, "Malloc failed on tuples list!\n");
     exit(EXIT_FAILURE);
   }
 
-  if (head == NULL) {
-     q->head = q;
-  } else {
-    q->head = head;
+  int tupleIndex;
+  for (tupleIndex = 0; tupleIndex < INIT_SIZE; tupleIndex++) {
+    (*q)->tuples[tupleIndex] = calloc(2, sizeof(int));
+    if ((*q)->tuples[tupleIndex] == NULL) {
+      fprintf(stderr, "Calloc failed on tuple #%d!\n", tupleIndex);
+      exit(EXIT_FAILURE);
+    }
   }
 
-  return q;
+  return (*q);
 }
 
-void enqueue(Queue *q, int *item) {
-  Queue *head = q->head; // Next item should know the current head of queue
-  if (q->varValTuple[1] == 0) { // A value is between 1 - 9,
-    q->varValTuple = item; // val = 0 means the tuple hasn't been set yet
-    return;
-  }
+void enqueue(Queue **q, int *item) {
+  (*q)->currentSize += 1;
+  
+  int nextIndex = ((*q)->tail + 1) % (*q)->maxSize;
+  (*q)->tuples[nextIndex][0] = item[0];
+  (*q)->tuples[nextIndex][1] = item[1];
 
-  while (q->next != NULL) { // Iterate to the end of the queue
-    q = q->next;
-  }
-
-  q->next = initQueue(q->next, head); // Initialize next item in queue
-  q->next->varValTuple = item; // Set tuple value
-  q->next->head = head;
+  (*q)->tail = nextIndex;
 }
 
-Queue **dequeue(Queue **q) {
-  Queue *oldQ = *q;
-  q = &(*q)->next;
-
-  *q = processQueue(*q);
-  destroyQueue(oldQ);
-  return q;
-}
-
-Queue *processQueue(Queue *q) {
-  Queue *iterQ = q;
-
-  while (iterQ != NULL) { // Update for the rest of the queue
-    iterQ->head = q;
-    iterQ = iterQ->next;
-  }
-
-  return q;
+void dequeue(Queue **q, int *item) {
+  item[0] = (*q)->tuples[(*q)->head][0];
+  item[1] = (*q)->tuples[(*q)->head][1];
+  
+  (*q)->head += 1;
+  (*q)->currentSize -= 1;
 }
 
 int *peek(Queue *q) {
-  if (q != NULL) { return q->varValTuple; }
-  else { return NULL; }
+  return q->tuples[q->head];
 }
 
-void destroyQueue(Queue *q) {
-  free(q->varValTuple);
-  q->varValTuple = NULL;
-  free(q);
-  q = NULL;
+int isFull(Queue *q) {
+  return (q->currentSize >= THRESHOLD * q->maxSize);
 }
+
+int isEmpty(Queue *q) {
+  return (q->currentSize == 0);
+}
+
+void resizeQueue(Queue **q) {
+  int newSize = (*q)->maxSize;
+  (*q)->tuples = realloc((*q)->tuples, newSize * sizeof(int *));
+  if ((*q)->tuples == NULL) {
+    fprintf(stderr, "Realloc failed on resizing!\n");
+    exit(EXIT_FAILURE);
+  }
+
+  int extend;
+  for (extend = (*q)->maxSize; extend < newSize; extend++) {
+    (*q)->tuples[extend] = calloc(2, sizeof(int));
+    if ((*q)->tuples[extend] == NULL) {
+      fprintf(stderr, "Calloc failed on resizing!\n");
+      exit(EXIT_FAILURE);
+    }
+  }
+  (*q)->maxSize *= 2;
+}
+
+void destroyQueue(Queue **q) {
+  int tuplesIndex;
+  for (tuplesIndex = 0; tuplesIndex < (*q)->maxSize; tuplesIndex++) {
+    free((*q)->tuples[tuplesIndex]);
+    (*q)->tuples[tuplesIndex] = NULL;
+  }
+
+  free((*q)->tuples);
+  free(*q);
+  *q = NULL;
+}
+  

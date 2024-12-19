@@ -1,26 +1,21 @@
 #ifndef DATASTRUCTS_H
 #define DATASTRUCTS_H
 
-
 typedef struct Queue Queue;
-Queue *initQueue(Queue *q, Queue *head);
-void enqueue(Queue *q, int *item);
-Queue **dequeue(Queue **q);
-Queue *processQueue(Queue *q);
+Queue *initQueue(Queue **queue);
+void enqueue(Queue **q, int *item);
+void dequeue(Queue **q, int *item);
 int *peek(Queue *q);
-void destroyQueue(Queue *q);
+int isFull(Queue *q);
+int isEmpty(Queue *q);
+void resizeQueue(Queue **q);
+void destroyQueue(Queue **q);
 
 
-typedef struct entry entry;
-entry *initEntry(unsigned int key, int *values);
-typedef struct dict dict;
-dict *initDict(int initSize);
-unsigned int hash(unsigned int key);
-unsigned int unhash(unsigned int hashedKey);
-entry *getValue(dict *d, unsigned int hashedKey);
-entry *setValue(dict *d, unsigned int hashedKey, int value);
-entry *removeValue(dict *d, unsigned int hashedKey, int value);
-int setKey(dict *d, unsigned int hashedKey);
-int removeKey(dict *d, unsigned int hashedKey);
+typedef struct Stack Stack;
+Stack *initStack(Stack **s);
+void push(Stack **s, int *item);
+void pop(Stack **s);
+void destroyStack(Stack **s);
 
 #endif
