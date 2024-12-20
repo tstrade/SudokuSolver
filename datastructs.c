@@ -45,7 +45,8 @@ Queue *initQueue(Queue **q) {
 
 void enqueue(Queue **q, int **item) {
   (*q)->currSize += 1;
-  
+  if (isFull(*q)) { resizeQueue(q); }
+
   int nextIndex = ((*q)->tail + 1) % (*q)->maxSize;
   (*q)->tuples[nextIndex][0] = (*item)[0];
   (*q)->tuples[nextIndex][1] = (*item)[1];
@@ -56,7 +57,7 @@ void enqueue(Queue **q, int **item) {
 void dequeue(Queue **q, int **item) {
   (*item)[0] = (*q)->tuples[(*q)->head][0];
   (*item)[1] = (*q)->tuples[(*q)->head][1];
-  
+
   (*q)->head += 1;
   (*q)->currSize -= 1;
 }
@@ -89,7 +90,7 @@ void resizeQueue(Queue **q) {
       exit(EXIT_FAILURE);
     }
   }
-  
+
   (*q)->maxSize = newSize;
 }
 
@@ -104,4 +105,3 @@ void destroyQueue(Queue **q) {
   free(*q);
   *q = NULL;
 }
-  

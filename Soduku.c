@@ -25,9 +25,10 @@ struct Soduku {
 Soduku *initBoard(Soduku **self, char *initialPositions) {
   *self = malloc(sizeof(Soduku));
   checkNULL((void *)(*self));
-  (*self)->csp = initCSP((*self)->csp);
+
+  (*self)->csp = initCSP(&((*self)->csp));
   checkNULL((void *)(*self)->csp);
-  support_pruning((*self)->csp);
+  support_pruning(&((*self)->csp));
 
   int variable;
   for (variable = 0; variable < NUM_SLOTS; variable++) {
@@ -82,7 +83,7 @@ void showRemovals(Soduku *self) {
 }
 
 void destroySoduku(Soduku **self) {
-  destroyCSP((*self)->csp);
+  destroyCSP(&((*self)->csp));
   free((*self));
   *self = NULL;
 }
@@ -101,25 +102,36 @@ int main(int argc, char *argv[]) {
   Soduku *board = NULL;
   board = initBoard(&board, argv[1]);
 
+  printf("Showing initial board setup...\n\n");
+  display(board->csp);
+  printf("\n\n Time to solve!\n\n");
+
   Queue *q = NULL;
   q = initQueue(&q);
-  clock_t start;
+  clock_t start, end;
 
   printf("Starting the solve with AC3 procedure...\n");
   start = clock();
   AC3(&q, &board->csp);
-  printf("AC3 solved the board in %f seconds.\n\n", difftime(start, clock()));
+  end = clock();
+  printf("AC3 solved the board in %f seconds.\n\n", difftime(end, start) / CLOCKS_PER_SEC);
   display(board->csp);
+  printf("Freeing memory for the board...\n");
   destroySoduku(&board);
+  printf("Board successully freed! \n\n Freeing memory for the queue...\n");
   destroyQueue(&q);
+  printf("Queue successfully freed!\n");
 
   board = initBoard(&board, argv[1]);
   printf("Starting the solve with Backtracking procedure...\n");
   start = clock();
   backtracking_search(&board->csp);
-  printf("Backtracking solved the board in %f seconds.\n\n", difftime(start, clock()));
+  end = clock();
+  printf("Backtracking solved the board in %f seconds.\n\n", difftime(end, start) / CLOCKS_PER_SEC);
   display(board->csp);
+  printf("Freeing memory for the board...\n");
   destroySoduku(&board);
+  printf("Board successfully freed!\n");
 
   return 0;
 }

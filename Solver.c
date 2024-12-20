@@ -20,7 +20,7 @@ int AC3(Queue **q, CSP **csp) {
   while ((*q)->head != (*q)->tail) {
     dequeue(q, &X);
 
-    if (revise(*csp, X[0], X[1]) == 1) {
+    if (revise(csp, X[0], X[1]) == 1) {
       if (count((*csp)->curr_domains[X[0]]) == 0) { return 0; }
 
       int domain, qIndex, isInQueue, nIndex, isNeighbor;
@@ -31,7 +31,7 @@ int AC3(Queue **q, CSP **csp) {
 	// Don't enqueue a tuple consisting of non-neighboring variables (constraint doesn't apply)
 	nIndex = 0, isNeighbor = 0;
         while (nIndex != NUM_NEIGHBORS && isNeighbor != 1) {
-	  if (X[0] == csp->neighbors[domain][nIndex]) {
+	  if (X[0] == (*csp)->neighbors[domain][nIndex]) {
 	    isNeighbor = 1;
 	  }
 	  nIndex++;
@@ -40,8 +40,8 @@ int AC3(Queue **q, CSP **csp) {
 
 	// Don't enqueue the tuple exists in the queue already
 	qIndex = 0, isInQueue = 0;
-	while (qIndex != q->maxSize && isInQueue != 1) {
-	  if (domain == q->tuples[qIndex][0] && X[0] == q->tuples[qIndex][1]) {
+	while (qIndex != (*q)->maxSize && isInQueue != 1) {
+	  if (domain == (*q)->tuples[qIndex][0] && X[0] == (*q)->tuples[qIndex][1]) {
 	    isInQueue = 1;
 	  }
 	  qIndex++;
@@ -49,7 +49,7 @@ int AC3(Queue **q, CSP **csp) {
 	if (isInQueue == 1) { continue; }
 
 	newTuple[0] = domain, newTuple[1] = X[0];
-	enqueue(&q, &newTuple);
+	enqueue(q, &newTuple);
       } // End for loop      
     } // End revise
   } // End while
@@ -113,7 +113,7 @@ int *backtrack(CSP **csp) {
     int mostConflicts[2]= {0,0};
     for (i = 0; i < NUM_SLOTS; i++) {
       // Check how many conflicts the current assignment has
-      currConflicts = nconflicts(*csp, i, csp->assignment[i]);
+      currConflicts = nconflicts(*csp, i, (*csp)->assignment[i]);
       if (currConflicts > mostConflicts[1]) {
 	mostConflicts[0] = i, mostConflicts[1] = currConflicts;
       }
