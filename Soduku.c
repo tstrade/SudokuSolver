@@ -110,6 +110,12 @@ int main(int argc, char *argv[]) {
   q = initQueue(&q);
   clock_t start, end;
 
+  printf("Checking assignments...\n");
+  int var;
+  for (var = 0; var < NUM_SLOTS; var++) {
+    printf("Variable %d: %d\n", var, board->csp->assignment[var]);
+  }
+
   printf("Starting the solve with AC3 procedure...\n");
   start = clock();
   AC3(&q, &board->csp);

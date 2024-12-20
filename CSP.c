@@ -140,22 +140,36 @@ int nconflicts(CSP *self, int variable, int value){
 }
 
 void display(CSP *self) {
-  int slot, *assignment;
+  int slot;
+  char *assignment = malloc(NUM_SLOTS * sizeof(char));
+
+  for (slot = 0; slot < NUM_SLOTS; slot++) {
+    assignment[slot] = self->assignment[slot] + 48;
+    /*
+    if (assignment[slot] == '0') {
+      assignment[slot] = '.';
+    }
+    */
+  }
+
+  printf("\n\n   ---------------------------------\n");
 
   for (slot = 0; slot < NUM_SLOTS; slot += 9) {
-    assignment = self->assignment;
-    printf("%d . %d . %d | %d . %d . %d | %d . %d . %d\n",
+    printf("  | %c  %c  %c  |  %c  %c  %c  |  %c  %c  %c |\n",
     assignment[slot], assignment[slot + 1], assignment[slot + 2],
     assignment[slot + 3], assignment[slot + 4], assignment[slot + 5],
     assignment[slot + 6], assignment[slot + 7], assignment[slot + 8]);
 
     if (slot == NUM_VALUES * 2 || slot == NUM_VALUES * 5) {
       // Only need two dividers (board is in thirds)
-      printf("----------+-----------+----------\n");
+      printf("   ----------+-----------+----------\n");
     }
-
   }
-  printf("\n\n");
+
+  printf("   ---------------------------------\n\n");
+
+  free(assignment);
+  assignment = NULL;
 }
 
 int **actions(CSP *self) {
@@ -301,7 +315,7 @@ int Soduku_Constraint(int varA, int valA, int varB, int valB) {
 int count(int *seq) {
   int count = 0;
   for (int i = 0; i < NUM_VALUES; i++) {
-    if (seq[i] != 0) { count++; }
+    if (seq[i] - 1 >= 0 && seq[i] + 1 <= NUM_VALUES) { count++; }
   } // End values loop
   return count;
 }

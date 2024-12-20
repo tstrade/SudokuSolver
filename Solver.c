@@ -12,7 +12,7 @@ int AC3(Queue **q, CSP **csp) {
     int var;
     for (var = 0; var < NUM_SLOTS; var++) {
       get_queue(*csp, q, var);
-    } 
+    }
   }
 
   int *X = calloc(2, sizeof(int));
@@ -50,7 +50,7 @@ int AC3(Queue **q, CSP **csp) {
 
 	newTuple[0] = domain, newTuple[1] = X[0];
 	enqueue(q, &newTuple);
-      } // End for loop      
+      } // End for loop
     } // End revise
   } // End while
 
@@ -58,7 +58,19 @@ int AC3(Queue **q, CSP **csp) {
   X = NULL;
   free(newTuple);
   newTuple = NULL;
-  
+
+  // All variables have been assigned without conflict - now update csp's assignments
+  int var, val;
+  for (var = 0; var < NUM_SLOTS; var++) {
+    for (val = 0; val < NUM_VALUES; val++) {
+      if ((*csp)->curr_domains[var][val] == 0) {
+	continue;
+      } else {
+        assign(csp, var, val + 1);
+      }
+    }
+  }
+
   return 1;
 }
 
@@ -73,7 +85,7 @@ int revise(CSP **csp, int Xi, int Xj) {
     // If valXi is not in the variable's current domain, constraint doesn't apply
     XiValue = (*csp)->curr_domains[Xi][valXi];
     if (XiValue == 0) { continue; }
-    
+
     // Check each value in Xi's domain against every value in Xj's domain
     for (valXj = 0; valXj < NUM_VALUES; valXj++) {
       XjValue = (*csp)->curr_domains[Xj][valXj];
@@ -91,9 +103,9 @@ int revise(CSP **csp, int Xi, int Xj) {
       prune(csp, Xi, XiValue);
       revised = 1;
     }
-    
+
   } // End Xi domain loop
-  
+
   return revised;
 }
 
