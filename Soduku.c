@@ -9,11 +9,6 @@
 #include <string.h>
 #include <time.h>
 
-
-#define NUM_VALUES 9
-#define NUM_SLOTS (NUM_VALUES * NUM_VALUES)
-#define NUM_NEIGHBORS (2 * (NUM_VALUES - 1))
-
 struct Soduku {
   CSP *csp;
   void (*showVars)(Soduku *self);
@@ -28,23 +23,55 @@ Soduku *initBoard(Soduku **self, char *initialPositions) {
 
   (*self)->csp = initCSP(&((*self)->csp));
   checkNULL((void *)(*self)->csp);
-  support_pruning(&((*self)->csp));
 
-  int variable;
+  int variable, initAssignmentCount = 0;
   for (variable = 0; variable < NUM_SLOTS; variable++) {
     if (initialPositions[variable] == '.') {
       initialPositions[variable] = '0';
+      initAssignmentCount++;
     }
     (*self)->csp->assignment[variable] = (int)initialPositions[variable] - 48;
   }
 
+  (*self)->csp->numVars = initAssignmentCount;
+  printf("This board has %d variables.\n\n", (*self)->csp->numVars);
+
+  (*self)->csp->variables = malloc((*self)->csp->numVars * sizeof(int));
+  checkNULL((void *)(*self)->csp->variables);
+
+  support_pruning(&((*self)->csp));
+
+  // Remove any values from the domains of the neighboring slots
+  // that violate the constraints with the initial board layout
+  int n, neighbor, assigned, v = 0;
+  for (variable = 0; variable < NUM_SLOTS; variable++) {
+    assigned = (*self)->csp->assignment[variable];
+
+    if (assigned == 0) {
+      (*self)->csp->variables[v] = variable;
+      v++;
+      continue;
+    }
+
+    printf("Clearing neighboring domains from initial assignments\n");
+    for (n = 0; n < NUM_NEIGHBORS; n++) {
+      neighbor = (*self)->csp->neighbors[variable][n];
+
+      if ((*self)->csp->curr_domains[neighbor][assigned - 1] != 0) {
+	prune(&((*self)->csp), neighbor, assigned);
+      }
+    }
+
+    prune(&((*self)->csp), variable, assigned - 1);
+  }
+  printf("Done clearing neighboring domains.\n");
   return *self;
 }
 
 void showVars(Soduku *self) {
   int variable;
   printf("Variables: ");
-  for (variable = 0; variable < NUM_SLOTS; variable++) {
+  for (variable = 0; variable < self->csp->numVars; variable++) {
     printf("%d  ", self->csp->variables[variable]);
   }
 }
@@ -52,8 +79,8 @@ void showVars(Soduku *self) {
 void showCurrentDomains(Soduku *self) {
   int variable;
   printf("Current variable domains are: \n");
-  for (variable = 0; variable < NUM_SLOTS; variable++) {
-    showVariableDomain(self, variable);
+  for (variable = 0; variable < self->csp->numVars; variable++) {
+    showVariableDomain(self, self->csp->variables[variable]);
   }
 }
 
@@ -71,7 +98,7 @@ void showVariableDomain(Soduku *self, int variable) {
 void showRemovals(Soduku *self) {
   int variable, values;
   printf("Current removed values for variable: ");
-  for (variable = 0; variable < NUM_SLOTS; variable++) {
+  for (variable = 0; variable < self->csp->numVars; variable++) {
     printf("%d: ", self->csp->variables[variable]);
     for (values = 0; values < NUM_VALUES; values++) {
       if (self->csp->removals[variable][values] != 0) {
@@ -110,17 +137,27 @@ int main(int argc, char *argv[]) {
   q = initQueue(&q);
   clock_t start, end;
 
-  printf("Checking assignments...\n");
-  int var;
+  /*
+  printf("Checking neighbors...\n");
+  int var, val;
   for (var = 0; var < NUM_SLOTS; var++) {
-    printf("Variable %d: %d\n", var, board->csp->assignment[var]);
+    printf("Neighbors of variable %d:", var);
+    for (val = 0; val < NUM_NEIGHBORS; val++) {
+      printf("  %d", board->csp->neighbors[var][val]);
+    }
+    printf("\n");
   }
+  */
 
   printf("Starting the solve with AC3 procedure...\n");
   start = clock();
-  AC3(&q, &board->csp);
+  int ac3Success = AC3(&q, &(board->csp));
   end = clock();
-  printf("AC3 solved the board in %f seconds.\n\n", difftime(end, start) / CLOCKS_PER_SEC);
+  if (ac3Success) {
+    printf("AC3 solved the board in %f seconds.\n\n", difftime(end, start) / CLOCKS_PER_SEC);
+  } else {
+    printf("AC3 failed! Continue debugging :)\n\n");
+  }
   display(board->csp);
   printf("Freeing memory for the board...\n");
   destroySoduku(&board);

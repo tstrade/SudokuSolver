@@ -23,6 +23,7 @@ int Soduku_Constraint(int varA, int valA, int varB, int valB);
 int count(int *seq);
 int getRow(int variable);
 int getCol(int variable);
+int isVariable(CSP *csp, int variable);
 void destroyCSP(CSP **self);
 
 #endif

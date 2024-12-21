@@ -5,11 +5,13 @@
 
 #define NUM_VALUES 9
 #define NUM_SLOTS (NUM_VALUES * NUM_VALUES)
-#define NUM_NEIGHBORS (2 * (NUM_VALUES - 1))
+#define NUM_NEIGHBORS ((NUM_VALUES - 1) + (2 * (NUM_VALUES - (NUM_VALUES/3))))
+#define NUM_BOX (NUM_VALUES / 3)
 
 int **actionOptions;
 
 struct CSP {
+  int numVars;
   int *variables;
   int **domains;
   int **neighbors;
@@ -18,6 +20,7 @@ struct CSP {
   int **removals;
   int *inference;
   int *assignment;
+  int *initialAssignments;
   int (*constraint)(int, int, int, int);
 };
 
@@ -33,25 +36,55 @@ void checkNULL(void *ptr) {
 }
 
 void initNeighbors(CSP **csp) {
-  int var, potentialNeighbor, neighborX, row;
-  // For each variable (slot on the board), we want to know what other
-  // variables (slots) are in their row / column (macros allow this to be adjustable size)
-  for (var = 0; var < NUM_SLOTS; var++) {
-    neighborX = 0, row = 0;
-    potentialNeighbor = var - (var % NUM_VALUES);
+  int var, val, row, col, box_start_row, box_start_col, nIndex, r, c;
+  int *added, added_idx;
 
-    while (neighborX < NUM_NEIGHBORS) {
-      if (potentialNeighbor != var) {
-        (*csp)->neighbors[var][neighborX] = potentialNeighbor;
-        neighborX++;
-      }
-      (*csp)->neighbors[var][neighborX] = (var % NUM_VALUES) + (NUM_VALUES * ++row);
-      neighborX++;
-      potentialNeighbor++;
+  for (var = 0; var < NUM_SLOTS; var++) {
+      added = calloc(NUM_SLOTS, sizeof(int));
+
+      row = getRow(var);
+      col = getCol(var);
+
+      box_start_row = (row / NUM_BOX) * NUM_BOX;
+      box_start_col = (col / NUM_BOX) * NUM_BOX;
+
+      nIndex = 0;
+
+      // Add row neighbors
+        for (val = 0; val < NUM_VALUES; val++) {
+            added_idx = row * NUM_VALUES + val;
+            if (added_idx != var && !added[added_idx]) {
+	        (*csp)->neighbors[var][nIndex] = added_idx;
+                added[added_idx] = 1;
+                nIndex++;
+            }
+        }
+
+      // Add column neighbors
+        for (val = 0; val < NUM_VALUES; val++) {
+            added_idx = val * NUM_VALUES + col;
+            if (added_idx != var && !added[added_idx]) {
+	        (*csp)->neighbors[var][nIndex] = added_idx;
+                added[added_idx] = 1;
+                nIndex++;
+            }
+        }
+
+      // Add box neighbors
+        for (r = box_start_row; r < box_start_row + NUM_BOX; r++) {
+            for (c = box_start_col; c < box_start_col + NUM_BOX; c++) {
+                added_idx = r * NUM_VALUES + c;
+                if (added_idx != var && !added[added_idx]) {
+		    (*csp)->neighbors[var][nIndex] = added_idx;
+                    added[added_idx] = 1;
+                    nIndex++;
+                }
+            }
+        }
+
+        free(added);
+        added = NULL;
     }
-    // Not necessary, but sorting can help with visuals later on
-    qsort((*csp)->neighbors[var], NUM_NEIGHBORS, sizeof(int), sortNeighbors);
-  }
 }
 
 CSP *initCSP(CSP **self) {
@@ -60,13 +93,6 @@ CSP *initCSP(CSP **self) {
   checkNULL((void *)(*self));
 
   int var, val;
-
-  // List of atomic variables - for Soduku, it will be the
-  // indexes of the 1D array representation of the board
-  (*self)->variables = malloc(NUM_SLOTS * sizeof(int));
-  checkNULL((void *)(*self)->variables);
-
-  for (var = 0; var < NUM_SLOTS; var++) { (*self)->variables[var] = var; }
 
   // For each variable, there is a list of possible entries ranging from 1 to 9
   (*self)->domains = malloc(NUM_SLOTS * sizeof(int *));
@@ -83,7 +109,6 @@ CSP *initCSP(CSP **self) {
   }
 
   // For each variable, there is a list of variables that adhere to the constraints
-  // 8 neighbors in the same row + 8 neighbors in the same column = 16 neighbors
   (*self)->neighbors = malloc(NUM_SLOTS * sizeof(int *));
   checkNULL((void *)(*self)->neighbors);
 
@@ -113,6 +138,8 @@ CSP *initCSP(CSP **self) {
   (*self)->constraint = Soduku_Constraint;
 
   (*self)->nassigns = 0;
+
+  (*self)->numVars = 0;
 
   initNeighbors(self);
 
@@ -233,20 +260,23 @@ int goal_test(CSP *self) {
 
 void support_pruning(CSP **self) {
   if ((*self)->curr_domains != NULL) { return; }
-
+  printf("Establishing current domains...\n");
   int var, val;
 
   (*self)->curr_domains = malloc(NUM_SLOTS * sizeof(int *));
   checkNULL((void *)(*self)->curr_domains);
 
   for (var = 0; var < NUM_SLOTS; var++) {
-    (*self)->curr_domains[var] = malloc(NUM_VALUES * sizeof(int));
+    (*self)->curr_domains[var] = calloc(NUM_VALUES, sizeof(int));
     checkNULL((void *)(*self)->curr_domains[var]);
 
     for (val = 0; val < NUM_VALUES; val++) {
-      (*self)->curr_domains[var][val] = (*self)->domains[var][val];
+      if (isVariable(*self, var)) {
+	(*self)->curr_domains[var][val] = (*self)->domains[var][val];
+      }
     } // End values loop
   } // End slots loop
+  printf("Pruning now supported!\n");
 }
 
 
@@ -278,27 +308,29 @@ void infer_assignment(CSP **self) {
   // Setup curr_domains if necessary
   support_pruning(self);
 
-  int possibleInference;
-  int i, j;
-  for (i = 0; i < NUM_SLOTS; i++) {
-    for (j = 0; j < NUM_VALUES; j++) {
-      if ((*self)->curr_domains[i][j] != 0) {
-        possibleInference = (*self)->curr_domains[i][j];
+  int possibleInference, i, var, val;
+  for (i = 0; i < (*self)->numVars; i++) {
+    var = (*self)->variables[i];
+
+    for (val = 0; val < NUM_VALUES; val++) {
+      if ((*self)->curr_domains[var][val] != 0) {
+        possibleInference = (*self)->curr_domains[var][val];
       }
     }
 
-    if (count((*self)->curr_domains[i]) == 1) {
-      (*self)->inference[i] = possibleInference;
+    if (count((*self)->curr_domains[var]) != 1) {
+      (*self)->inference[var] = possibleInference;
     } else {
-      (*self)->inference[i] = 0;
+      (*self)->inference[var] = 0;
     }
   }
 }
 
 
 void restore(CSP **self) {
-  int var, val;
-  for (var = 0; var < NUM_SLOTS; var++) {
+  int i, var, val;
+  for (i = 0; i < NUM_SLOTS; i++) {
+    var = (*self)->variables[i];
     for (val = 0; val < NUM_VALUES; val++) {
       if ((*self)->removals[var][val] != 0) {
         (*self)->curr_domains[var][val] = val + 1;
@@ -315,7 +347,7 @@ int Soduku_Constraint(int varA, int valA, int varB, int valB) {
 int count(int *seq) {
   int count = 0;
   for (int i = 0; i < NUM_VALUES; i++) {
-    if (seq[i] - 1 >= 0 && seq[i] + 1 <= NUM_VALUES) { count++; }
+    if (seq[i] != 0) { count++; }
   } // End values loop
   return count;
 }
@@ -326,6 +358,14 @@ int getRow(int variable) {
 
 int getCol(int variable) {
   return variable % NUM_VALUES;
+}
+
+int isVariable(CSP *csp, int variable) {
+  int var;
+  for (var = 0; var < csp->numVars; var++) {
+    if (variable == csp->variables[var]) { return 1; }
+  }
+  return 0;
 }
 
 void destroyCSP(CSP **self) {

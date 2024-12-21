@@ -3,10 +3,6 @@
 #include "datastructs.c"
 #include <stdlib.h>
 
-#define NUM_VALUES 9
-#define NUM_SLOTS (NUM_VALUES * NUM_VALUES)
-#define NUM_NEIGHBORS (2 * (NUM_VALUES - 1))
-
 int AC3(Queue **q, CSP **csp) {
   if ((*q)->currSize == 0) {
     int var;
@@ -15,15 +11,20 @@ int AC3(Queue **q, CSP **csp) {
     }
   }
 
+  printf("Queue has %d items.\n\n", (*q)->currSize);
+
   int *X = calloc(2, sizeof(int));
   int *newTuple = calloc(2, sizeof(int));
-  while ((*q)->head != (*q)->tail) {
+  int domain, qIndex, isInQueue, nIndex, isNeighbor;
+  while ((*q)->currSize != 0) {
     dequeue(q, &X);
 
     if (revise(csp, X[0], X[1]) == 1) {
-      if (count((*csp)->curr_domains[X[0]]) == 0) { return 0; }
+      if (count((*csp)->curr_domains[X[0]]) == 0) {
+	printf("Found empty domain for variable %d with %d items left in queue!\n", X[0], (*q)->currSize);
+	return 0;
+      }
 
-      int domain, qIndex, isInQueue, nIndex, isNeighbor;
       for (domain = 0; domain < NUM_SLOTS; domain++) {
 	// Don't enqueue a tuple consisting of the same variable ((0,0), (1,1), etc.)
 	if (domain == X[1]) { continue; }
@@ -76,30 +77,29 @@ int AC3(Queue **q, CSP **csp) {
 
 int revise(CSP **csp, int Xi, int Xj) {
   int revised = 0; // false
+  // If Xi is not a variable, it cannot be unassigned its value
+  if (isVariable(*csp, Xi) == 0) { return revised; }
 
-  // Want to see how many values in Xi's domain satisfy the rules of soduku
-  int XiValue, XjValue, valXi, valXj, unsatisfied;
-  for (valXi = 0; valXi < NUM_VALUES; valXi++) {
-    unsatisfied = 0;
+  // Want to see which values in Xi's current domain satisfy the rules of Soduku
+  int XiValue, XjValue, val, unsatisfied;
 
-    // If valXi is not in the variable's current domain, constraint doesn't apply
-    XiValue = (*csp)->curr_domains[Xi][valXi];
+  for (val = 0; val < NUM_VALUES; val++) {
+    // If val is not in Xj's current domain, there is no conflict
+    XjValue = (*csp)->curr_domains[Xj][val];
+    if (XjValue == 0) { continue; }
+
+    // If val is not in Xi's current domain, there is no conflict
+    XiValue = (*csp)->curr_domains[Xi][val];
     if (XiValue == 0) { continue; }
 
-    // Check each value in Xi's domain against every value in Xj's domain
-    for (valXj = 0; valXj < NUM_VALUES; valXj++) {
-      XjValue = (*csp)->curr_domains[Xj][valXj];
-      if (XjValue == 0) { continue; }
+    // Since Xi and Xj are neighbors (as per the enqueue process in AC3)
+    // We check if the constraint is satisfied between their current domains
+    unsatisfied = (*csp)->constraint(Xi, XiValue, Xj, XjValue);
 
-      // Since Xi and Xj are neighbors (as per the enqueue process in AC3)
-      // We check if the constraint is satisfied between and of their possible values
-      // AKA, compare their current domains
-      unsatisfied += (*csp)->constraint(Xi, XiValue, Xj, XjValue);
-    }
-
-    // If the value being considered for variable Xi has any conflicts with
-    // any of the possible values of Xj, remove value from Xi's current domain
+    // If the values being considered for variable Xi have any conflicts with
+    // the value assigned to Xj, remove the values from Xi's current domain
     if (unsatisfied != 0) {
+      printf("Getting rid of %d from %d's domain due to conflict with %d.\n", XiValue, Xi, Xj);
       prune(csp, Xi, XiValue);
       revised = 1;
     }
@@ -152,8 +152,8 @@ int *backtrack(CSP **csp) {
 
 int select_unassigned_variable(CSP *csp) {
   int var;
-  for (var = 0; var < NUM_SLOTS; var++) {
-    if (csp->assignment[var] == 0) { return var; } // Return first unassigned variable
+  for (var = 0; var < csp->numVars; var++) {
+    if (csp->assignment[csp->variables[var]] == 0) { return var; } // Return first unassigned variable
   }
   return -1; // All variables assigned a value
 }
@@ -164,9 +164,9 @@ void get_queue(CSP *csp, Queue **q, int variable) {
   // column, which will help us check our possible solution against our constraint
   int nIndex;
   int *tuple = calloc(2, sizeof(int));
-  tuple[0] = variable;
+  tuple[1] = variable;
   for (nIndex = 0; nIndex < NUM_NEIGHBORS; nIndex++) {
-    tuple[1] = csp->neighbors[variable][nIndex];
+    tuple[0] = csp->neighbors[variable][nIndex];
     enqueue(q, &tuple);
   }
   free(tuple);
