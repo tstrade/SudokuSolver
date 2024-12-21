@@ -9,20 +9,9 @@
 #include <string.h>
 #include <time.h>
 
-struct Soduku {
-  CSP *csp;
-  void (*showVars)(Soduku *self);
-  void (*showCurrentDomains)(Soduku *self);
-  void (*showVariableDomain)(Soduku *self, int variable);
-  void (*showRemovals)(Soduku *self);
-};
 
-Soduku *initBoard(Soduku **self, char *initialPositions) {
-  *self = malloc(sizeof(Soduku));
-  checkNULL((void *)(*self));
-
-  (*self)->csp = initCSP(&((*self)->csp));
-  checkNULL((void *)(*self)->csp);
+CSP *initBoard(CSP *board, char *initialPositions) {
+  board = initCSP(board);
 
   int variable, initAssignmentCount = 0;
   for (variable = 0; variable < NUM_SLOTS; variable++) {
@@ -30,80 +19,74 @@ Soduku *initBoard(Soduku **self, char *initialPositions) {
       initialPositions[variable] = '0';
       initAssignmentCount++;
     }
-    (*self)->csp->assignment[variable] = (int)initialPositions[variable] - 48;
+    board->assignment[variable] = (int)initialPositions[variable] - 48;
   }
 
-  (*self)->csp->numVars = initAssignmentCount;
-  printf("This board has %d variables.\n\n", (*self)->csp->numVars);
+  board->numVars = initAssignmentCount;
+  printf("This board has %d variables.\n\n", board->numVars);
 
-  (*self)->csp->variables = malloc((*self)->csp->numVars * sizeof(int));
-  checkNULL((void *)(*self)->csp->variables);
+  board->variables = malloc(board->numVars * sizeof(int));
+  checkNULL((void *)board->variables);
 
   // Track all of the current variables on the board
   int v = 0;
   for (variable = 0; variable < NUM_SLOTS; variable++) {
-    if ((*self)->csp->assignment[variable] == 0) {
-      (*self)->csp->variables[v] = variable;
+    if (board->assignment[variable] == 0) {
+      board->variables[v] = variable;
       v++;
     }
   }
 
-  infer_assignment(&((*self)->csp));
+  infer_assignment(board);
 
-
-
-  showVars(*self);
-  showCurrentDomains(*self);
-  return *self;
+  showVars(board);
+  showCurrentDomains(board);
+  return board;
 }
 
-void showVars(Soduku *self) {
+void showVars(CSP *board) {
   int variable;
   printf("Variables: ");
-  for (variable = 0; variable < self->csp->numVars; variable++) {
-    printf("%d  ", self->csp->variables[variable]);
+  for (variable = 0; variable < board->numVars; variable++) {
+    printf("%d  ", board->variables[variable]);
   }
   printf("\n\n");
 }
 
-void showCurrentDomains(Soduku *self) {
+void showCurrentDomains(CSP *board) {
   int variable;
   printf("Current variable domains are: \n");
-  for (variable = 0; variable < self->csp->numVars; variable++) {
-    showVariableDomain(self, self->csp->variables[variable]);
+  for (variable = 0; variable < board->numVars; variable++) {
+    showVariableDomain(board, board->variables[variable]);
   }
 }
 
-void showVariableDomain(Soduku *self, int variable) {
+void showVariableDomain(CSP *board, int variable) {
   int values;
   printf("Variable %d current domains: ", variable);
   for (values = 0; values < NUM_VALUES; values++) {
-    if (self->csp->curr_domains[variable][values] != 0) {
-      printf("%d  ", self->csp->curr_domains[variable][values]);
+    if (board->curr_domains[variable][values] != 0) {
+      printf("%d  ", board->curr_domains[variable][values]);
     }
   }
   printf("\n");
 }
 
-void showRemovals(Soduku *self) {
+void showRemovals(CSP *board) {
   int variable, values;
   printf("Current removed values for variable: ");
-  for (variable = 0; variable < self->csp->numVars; variable++) {
-    printf("%d: ", self->csp->variables[variable]);
+  for (variable = 0; variable < board->numVars; variable++) {
+    printf("%d: ", board->variables[variable]);
     for (values = 0; values < NUM_VALUES; values++) {
-      if (self->csp->removals[variable][values] != 0) {
-        printf("%d  ", self->csp->removals[variable][values]);
+      if (board->removals[variable][values] != 0) {
+        printf("%d  ", board->removals[variable][values]);
       }
     }
     printf("\n\n");
   }
 }
 
-void destroySoduku(Soduku **self) {
-  destroyCSP(&((*self)->csp));
-  free((*self));
-  *self = NULL;
-}
+void clearBoard(CSP *board, Queue *q);
 
 int main(int argc, char *argv[]) {
   if (argc != 2) {
@@ -116,16 +99,16 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  Soduku *board = NULL;
-  board = initBoard(&board, argv[1]);
+  CSP *board = NULL;
+  board = initBoard(board, argv[1]);
 
   printf("Showing initial board setup...\n\n");
-  display(board->csp);
+  display(board);
   printf("\n\n Time to solve!\n\n");
 
 
   Queue *q = NULL;
-  q = initQueue(&q);
+  q = initQueue(q);
   clock_t start, end;
 
   /*
@@ -146,30 +129,32 @@ int main(int argc, char *argv[]) {
 
   printf("Starting the solve with AC3 procedure...\n");
   start = clock();
-  int ac3Success = AC3(&q, &(board->csp));
+  int ac3Success = AC3(q, board);
   end = clock();
   if (ac3Success) {
     printf("AC3 solved the board in %f seconds.\n\n", difftime(end, start) / CLOCKS_PER_SEC);
   } else {
     printf("AC3 failed! Continue debugging :)\n\n");
   }
-  display(board->csp);
+  display(board);
   printf("Freeing memory for the board...\n");
-  destroySoduku(&board);
-  printf("Board successully freed! \n\n Freeing memory for the queue...\n");
-  destroyQueue(&q);
+  //destroySoduku(board);
+  //printf("Board successully freed! \n\n Freeing memory for the queue...\n");
+  destroyQueue(q);
   printf("Queue successfully freed!\n");
 
-  board = initBoard(&board, argv[1]);
+  /*
+  board = initBoard(board, argv[1]);
   printf("Starting the solve with Backtracking procedure...\n");
   start = clock();
-  backtracking_search(&board->csp);
+  backtracking_search(board);
   end = clock();
   printf("Backtracking solved the board in %f seconds.\n\n", difftime(end, start) / CLOCKS_PER_SEC);
-  display(board->csp);
+  display(board);
   printf("Freeing memory for the board...\n");
-  destroySoduku(&board);
+  destroySoduku(board);
   printf("Board successfully freed!\n");
+  */
 
   return 0;
 }

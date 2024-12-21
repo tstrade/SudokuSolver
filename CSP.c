@@ -35,7 +35,7 @@ void checkNULL(void *ptr) {
   }
 }
 
-void initNeighbors(CSP **csp) {
+void initNeighbors(CSP *csp) {
   int var, val, row, col, box_start_row, box_start_col, nIndex, r, c;
   int *added, added_idx;
 
@@ -54,7 +54,7 @@ void initNeighbors(CSP **csp) {
         for (val = 0; val < NUM_VALUES; val++) {
             added_idx = row * NUM_VALUES + val;
             if (added_idx != var && !added[added_idx]) {
-	        (*csp)->neighbors[var][nIndex] = added_idx;
+	        csp->neighbors[var][nIndex] = added_idx;
                 added[added_idx] = 1;
                 nIndex++;
             }
@@ -64,7 +64,7 @@ void initNeighbors(CSP **csp) {
         for (val = 0; val < NUM_VALUES; val++) {
             added_idx = val * NUM_VALUES + col;
             if (added_idx != var && !added[added_idx]) {
-	        (*csp)->neighbors[var][nIndex] = added_idx;
+	        csp->neighbors[var][nIndex] = added_idx;
                 added[added_idx] = 1;
                 nIndex++;
             }
@@ -75,7 +75,7 @@ void initNeighbors(CSP **csp) {
             for (c = box_start_col; c < box_start_col + NUM_BOX; c++) {
                 added_idx = r * NUM_VALUES + c;
                 if (added_idx != var && !added[added_idx]) {
-		    (*csp)->neighbors[var][nIndex] = added_idx;
+		    csp->neighbors[var][nIndex] = added_idx;
                     added[added_idx] = 1;
                     nIndex++;
                 }
@@ -87,74 +87,74 @@ void initNeighbors(CSP **csp) {
     }
 }
 
-CSP *initCSP(CSP **self) {
-  *self = malloc(sizeof(CSP));
+CSP *initCSP(CSP *self) {
+  self = malloc(sizeof(CSP));
   // Return NULL if not enough memory for the CSP structure
-  checkNULL((void *)(*self));
+  checkNULL((void *)self);
 
   int var, val;
 
   // For each variable, there is a list of possible entries ranging from 1 to 9
-  (*self)->domains = malloc(NUM_SLOTS * sizeof(int *));
-  checkNULL((void *)(*self)->domains);
+  self->domains = malloc(NUM_SLOTS * sizeof(int *));
+  checkNULL((void *)self->domains);
 
   for (var = 0; var < NUM_SLOTS; var++) {
-    (*self)->domains[var] = malloc(NUM_VALUES * sizeof(int));
-    checkNULL((void *)(*self)->domains[var]);
+    self->domains[var] = malloc(NUM_VALUES * sizeof(int));
+    checkNULL((void *)self->domains[var]);
 
     // Fill domains with appropriate range of values
     for (val = 0; val < NUM_VALUES; val++) {
-      (*self)->domains[var][val] = val + 1;
+      self->domains[var][val] = val + 1;
     }
   }
 
   // For each variable, there is a list of variables that adhere to the constraints
-  (*self)->neighbors = malloc(NUM_SLOTS * sizeof(int *));
-  checkNULL((void *)(*self)->neighbors);
+  self->neighbors = malloc(NUM_SLOTS * sizeof(int *));
+  checkNULL((void *)self->neighbors);
 
   for (var = 0; var < NUM_SLOTS; var++) {
-    (*self)->neighbors[var] = malloc(NUM_NEIGHBORS * sizeof(int));
-    checkNULL((void *)(*self)->neighbors[var]);
+    self->neighbors[var] = malloc(NUM_NEIGHBORS * sizeof(int));
+    checkNULL((void *)self->neighbors[var]);
   }
 
   // As we make suppositions about variable assignments, we want to be
   // able to backtrack in case the supposition ends up incorrect
   // This "dict" will be cleared each time suppose() is called
-  (*self)->removals = malloc(NUM_SLOTS * sizeof(int *));
-  checkNULL((void *)(*self)->removals);
+  self->removals = malloc(NUM_SLOTS * sizeof(int *));
+  checkNULL((void *)self->removals);
 
   for (val = 0; val < NUM_SLOTS; val++) {
-    (*self)->removals[val] = calloc(NUM_VALUES, sizeof(int));
-    checkNULL((void *)(*self)->removals[val]);
+    self->removals[val] = calloc(NUM_VALUES, sizeof(int));
+    checkNULL((void *)self->removals[val]);
   }
 
-  (*self)->inference = calloc(NUM_SLOTS, sizeof(int));
-  checkNULL((void *)(*self)->inference);
+  self->inference = calloc(NUM_SLOTS, sizeof(int));
+  checkNULL((void *)self->inference);
 
-  (*self)->assignment = calloc(NUM_SLOTS, sizeof(int));
-  checkNULL((void *)(*self)->inference);
+  self->assignment = calloc(NUM_SLOTS, sizeof(int));
+  checkNULL((void *)self->inference);
 
   // Assign the Soduku Rules to the CSP constaint function
-  (*self)->constraint = Soduku_Constraint;
+  self->constraint = Soduku_Constraint;
 
-  (*self)->nassigns = 0;
+  self->nassigns = 0;
 
-  (*self)->numVars = 0;
+  self->numVars = 0;
 
-  (*self)->curr_domains = NULL;
+  self->curr_domains = NULL;
 
   initNeighbors(self);
 
-  return *self;
+  return self;
 }
 
-void assign(CSP **self, int variable, int value) {
-  (*self)->assignment[variable] = value;
-  (*self)->nassigns++;
+void assign(CSP *self, int variable, int value) {
+  self->assignment[variable] = value;
+  self->nassigns++;
 }
 
-void unassign(CSP **self, int variable) {
-  (*self)->assignment[variable] = 0;
+void unassign(CSP *self, int variable) {
+  self->assignment[variable] = 0;
 }
 
 
@@ -240,9 +240,9 @@ int **actions(CSP *self) {
   }
 }
 
-int *result(CSP **self, int *action) {
-  (*self)->assignment[action[0]] = action[1];
-  return (*self)->assignment;
+int *result(CSP *self, int *action) {
+  self->assignment[action[0]] = action[1];
+  return self->assignment;
 }
 
 int goal_test(CSP *self) {
@@ -260,21 +260,21 @@ int goal_test(CSP *self) {
   return 1;
 }
 
-void support_pruning(CSP **self) {
-  if ((*self)->curr_domains != NULL) { return; }
+void support_pruning(CSP *self) {
+  if (self->curr_domains != NULL) { return; }
   // printf("Establishing current domains...\n");
   int var, val;
 
-  (*self)->curr_domains = malloc(NUM_SLOTS * sizeof(int *));
-  checkNULL((void *)(*self)->curr_domains);
+  self->curr_domains = malloc(NUM_SLOTS * sizeof(int *));
+  checkNULL((void *)self->curr_domains);
 
   for (var = 0; var < NUM_SLOTS; var++) {
-    (*self)->curr_domains[var] = calloc(NUM_VALUES, sizeof(int));
-    checkNULL((void *)(*self)->curr_domains[var]);
+    self->curr_domains[var] = calloc(NUM_VALUES, sizeof(int));
+    checkNULL((void *)self->curr_domains[var]);
 
     for (val = 0; val < NUM_VALUES; val++) {
-      if (isVariable(*self, var)) {
-	(*self)->curr_domains[var][val] = (*self)->domains[var][val];
+      if (isVariable(self, var)) {
+	self->curr_domains[var][val] = self->domains[var][val];
       }
     } // End values loop
   } // End slots loop
@@ -282,12 +282,12 @@ void support_pruning(CSP **self) {
 
   // Get rid of domain values if neighbor is already assigned
   int nIndex, neighbor;
-  for (var = 0; var < (*self)->numVars; var++) {
+  for (var = 0; var < self->numVars; var++) {
     for (val = 0; val < NUM_VALUES; val++) {
       for (nIndex = 0; nIndex < NUM_NEIGHBORS; nIndex++) {
-	neighbor = (*self)->neighbors[(*self)->variables[var]][nIndex];
-	if ((*self)->curr_domains[(*self)->variables[var]][val] == (*self)->assignment[neighbor]) {
-	  prune(self, var, (*self)->assignment[neighbor]);
+	neighbor = self->neighbors[self->variables[var]][nIndex];
+	if (self->curr_domains[self->variables[var]][val] == self->assignment[neighbor]) {
+	  prune(self, var, self->assignment[neighbor]);
 	}
       } // End neighbor loop
     } // End value loop
@@ -295,61 +295,61 @@ void support_pruning(CSP **self) {
 }
 
 
-void suppose(CSP **self, int variable, int value) {
+void suppose(CSP *self, int variable, int value) {
   // Setup curr_domains if necessary
   support_pruning(self);
 
   int val, checkValue;
   for (val = 0; val < NUM_VALUES; val++) {
-    checkValue = (*self)->curr_domains[variable][val];
+    checkValue = self->curr_domains[variable][val];
     if (checkValue != value) {
       // Remove any values that do not align with the supposition
-      (*self)->removals[variable][val] = checkValue;
-      (*self)->curr_domains[variable][val] = 0;
+      self->removals[variable][val] = checkValue;
+      self->curr_domains[variable][val] = 0;
     } else {
       // Make sure supposed value is not set in removed "dict"
-      (*self)->removals[variable][val] = 0;
-      (*self)->curr_domains[variable][val] = value; // Redundant, but for consistency's sake
+      self->removals[variable][val] = 0;
+      self->curr_domains[variable][val] = value; // Redundant, but for consistency's sake
     }
   } // End values loop
 }
 
-void prune(CSP **self, int variable, int value) {
-  (*self)->curr_domains[variable][value - 1] = 0;
-  (*self)->removals[variable][value - 1] = value;
+void prune(CSP *self, int variable, int value) {
+  self->curr_domains[variable][value - 1] = 0;
+  self->removals[variable][value - 1] = value;
 }
 
-void infer_assignment(CSP **self) {
+void infer_assignment(CSP *self) {
   // Setup curr_domains if necessary
   support_pruning(self);
 
   int possibleInference, i, var, val;
-  for (i = 0; i < (*self)->numVars; i++) {
-    var = (*self)->variables[i];
+  for (i = 0; i < self->numVars; i++) {
+    var = self->variables[i];
 
     for (val = 0; val < NUM_VALUES; val++) {
-      if ((*self)->curr_domains[var][val] != 0) {
-        possibleInference = (*self)->curr_domains[var][val];
+      if (self->curr_domains[var][val] != 0) {
+        possibleInference = self->curr_domains[var][val];
       }
     }
 
-    if (count((*self)->curr_domains[var]) == 1) {
-      (*self)->assignment[var] = possibleInference;
+    if (count(self->curr_domains[var]) == 1) {
+      self->assignment[var] = possibleInference;
     } else {
-      (*self)->assignment[var] = 0;
+      self->assignment[var] = 0;
     }
   }
 }
 
 
-void restore(CSP **self) {
+void restore(CSP *self) {
   int i, var, val;
   for (i = 0; i < NUM_SLOTS; i++) {
-    var = (*self)->variables[i];
+    var = self->variables[i];
     for (val = 0; val < NUM_VALUES; val++) {
-      if ((*self)->removals[var][val] != 0) {
-        (*self)->curr_domains[var][val] = val + 1;
-        (*self)->removals[var][val] = 0;
+      if (self->removals[var][val] != 0) {
+        self->curr_domains[var][val] = val + 1;
+        self->removals[var][val] = 0;
       }
     }
   }
@@ -383,15 +383,15 @@ int isVariable(CSP *csp, int variable) {
   return 0;
 }
 
-void destroyCSP(CSP **self) {
-  free((*self)->variables);
+void destroyCSP(CSP *self) {
+  free(self->variables);
 
   int i;
   for (i = 0; i < NUM_SLOTS; i++) {
-    free((*self)->domains[i]);
-    free((*self)->neighbors[i]);
-    free((*self)->curr_domains[i]);
-    free((*self)->removals[i]);
+    free(self->domains[i]);
+    free(self->neighbors[i]);
+    free(self->curr_domains[i]);
+    free(self->removals[i]);
   }
   for (i = 0; i < NUM_VALUES; i++) {
     free(actionOptions[i]);
@@ -399,13 +399,13 @@ void destroyCSP(CSP **self) {
 
   free(actionOptions);
   actionOptions = NULL;
-  free((*self)->removals);
-  free((*self)->domains);
-  free((*self)->neighbors);
-  free((*self)->curr_domains);
-  free((*self)->inference);
-  free((*self)->assignment);
+  free(self->removals);
+  free(self->domains);
+  free(self->neighbors);
+  free(self->curr_domains);
+  free(self->inference);
+  free(self->assignment);
 
-  free(*self);
-  *self = NULL;
+  free(self);
+  self = NULL;
 }

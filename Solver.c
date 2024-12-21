@@ -3,26 +3,26 @@
 #include "datastructs.c"
 #include <stdlib.h>
 
-int AC3(Queue **q, CSP **csp) {
-  if ((*q)->currSize == 0) {
+int AC3(Queue *q, CSP *csp) {
+  if (q->currSize == 0) {
     int var;
-    for (var = 0; var < (*csp)->numVars; var++) {
-      get_queue(csp, q, (*csp)->variables[var]);
+    for (var = 0; var < csp->numVars; var++) {
+      get_queue(csp, q, csp->variables[var]);
     }
   }
 
-  printf("Queue has %d items.\n\n", (*q)->currSize);
+  printf("Queue has %d items.\n\n", q->currSize);
 
   int *X = calloc(2, sizeof(int));
   int domain, qIndex, isInQueue, nIndex, isNeighbor;
 
-  while ((*q)->currSize != 0) {
-    dequeue(q, &X);
+  while (q->currSize != 0) {
+    dequeue(q, X);
 
     // Check for constraint violations between first pair of neighbors
     if (revise(csp, X[0], X[1]) == 1) {
-      if (count((*csp)->curr_domains[X[0]]) == 0) {
-	printf("Found empty domain for variable %d with %d items left in queue!\n", X[0], (*q)->currSize);
+      if (count(csp->curr_domains[X[0]]) == 0) {
+	printf("Found empty domain for variable %d with %d items left in queue!\n", X[0], q->currSize);
 	return 0;
       }
 
@@ -33,7 +33,7 @@ int AC3(Queue **q, CSP **csp) {
 	// Don't enqueue a tuple consisting of non-neighboring variables (constraint doesn't apply)
 	nIndex = 0, isNeighbor = 0;
         while (nIndex != NUM_NEIGHBORS && isNeighbor != 1) {
-	  if (X[0] == (*csp)->neighbors[domain][nIndex]) {
+	  if (X[0] == csp->neighbors[domain][nIndex]) {
 	    isNeighbor = 1;
 	  }
 	  nIndex++;
@@ -42,8 +42,8 @@ int AC3(Queue **q, CSP **csp) {
 
 	// Don't enqueue the tuple exists in the queue already
 	qIndex = 0, isInQueue = 0;
-	while (qIndex != (*q)->maxSize && isInQueue != 1) {
-	  if (domain == (*q)->tuples[qIndex][0] && X[0] == (*q)->tuples[qIndex][1]) {
+	while (qIndex != q->maxSize && isInQueue != 1) {
+	  if (domain == q->tuples[qIndex][0] && X[0] == q->tuples[qIndex][1]) {
 	    isInQueue = 1;
 	  }
 	  qIndex++;
@@ -66,10 +66,10 @@ int AC3(Queue **q, CSP **csp) {
   return 1;
 }
 
-int revise(CSP **csp, int Xi, int Xj) {
+int revise(CSP *csp, int Xi, int Xj) {
   int revised = 0; // false
   // If Xi is not a variable, it cannot be unassigned its value
-  if (isVariable(*csp, Xi) == 0) {
+  if (isVariable(csp, Xi) == 0) {
     printf("%d is not a variable!\n", Xi);
     return revised;
   }
@@ -80,8 +80,8 @@ int revise(CSP **csp, int Xi, int Xj) {
   for (val = 0; val < NUM_VALUES; val++) {
     // If Xj is not a variable, we need to use its assigned value
     // since all atomics have current domains of 0's
-    if (isVariable(*csp, Xj) == 0) { XjValue = (*csp)->assignment[Xj]; }
-    else { XjValue = (*csp)->curr_domains[Xj][val]; }
+    if (isVariable(csp, Xj) == 0) { XjValue = csp->assignment[Xj]; }
+    else { XjValue = csp->curr_domains[Xj][val]; }
 
     // If val is not in Xj's current domain, there is no conflict
     if (XjValue == 0) {
@@ -90,7 +90,7 @@ int revise(CSP **csp, int Xi, int Xj) {
     }
 
     // If val is not in Xi's current domain, there is no conflict
-    XiValue = (*csp)->curr_domains[Xi][val];
+    XiValue = csp->curr_domains[Xi][val];
     if (XiValue == 0) {
       printf("%d is not in %d's domain for (%d, %d)!\n", XiValue, Xi, Xi, Xj);
       continue;
@@ -98,7 +98,7 @@ int revise(CSP **csp, int Xi, int Xj) {
 
     // Since Xi and Xj are neighbors (as per the enqueue process in AC3),
     // we check if the constraint is satisfied between their current domains
-    unsatisfied = (*csp)->constraint(Xi, XiValue, Xj, XjValue);
+    unsatisfied = csp->constraint(Xi, XiValue, Xj, XjValue);
 
     // If the values being considered for variable Xi have any conflicts,
     // remove the values from Xi's current domain
@@ -113,23 +113,23 @@ int revise(CSP **csp, int Xi, int Xj) {
   return revised;
 }
 
-int *backtracking_search(CSP **csp) {
+int *backtracking_search(CSP *csp) {
   return backtrack(csp);
 }
 
-int *backtrack(CSP **csp) {
+int *backtrack(CSP *csp) {
   // If board is completed correctly, return assignments
-  if (goal_test(*csp) == 1) { return (*csp)->assignment; }
+  if (goal_test(csp) == 1) { return csp->assignment; }
 
   // If all variables are assigned, but board is incorrect
   // Look for the variable with the most conflicts
-  int variable = select_unassigned_variable(*csp);
+  int variable = select_unassigned_variable(csp);
   if (variable == -1) {
     int i, currConflicts;
     int mostConflicts[2]= {0,0};
     for (i = 0; i < NUM_SLOTS; i++) {
       // Check how many conflicts the current assignment has
-      currConflicts = nconflicts(*csp, i, (*csp)->assignment[i]);
+      currConflicts = nconflicts(csp, i, csp->assignment[i]);
       if (currConflicts > mostConflicts[1]) {
 	mostConflicts[0] = i, mostConflicts[1] = currConflicts;
       }
@@ -139,7 +139,7 @@ int *backtrack(CSP **csp) {
 
   int val, conflicts, *result;
   for (val = 0; val < NUM_VALUES; val++) {
-    conflicts = nconflicts(*csp, variable, val);
+    conflicts = nconflicts(csp, variable, val);
 
     if (conflicts == 0) {
       assign(csp, variable, val);
@@ -163,14 +163,14 @@ int select_unassigned_variable(CSP *csp) {
 }
 
 
-void get_queue(CSP **csp, Queue **q, int variable) {
+void get_queue(CSP *csp, Queue *q, int variable) {
   // We want to find each variable-variable pair that is in the same row/column/box,
   // which will help us check our possible solution against our constraint
   int nIndex;
   printf("Neighbors of %d:", variable);
   for (nIndex = 0; nIndex < NUM_NEIGHBORS; nIndex++) {
-    printf(" %d", (*csp)->neighbors[variable][nIndex]);
-    enqueue(q, variable, (*csp)->neighbors[variable][nIndex]);
+    printf(" %d", csp->neighbors[variable][nIndex]);
+    enqueue(q, variable, csp->neighbors[variable][nIndex]);
   }
   printf("\n");
 }
