@@ -128,7 +128,7 @@ int main(int argc, char *argv[]) {
   q = initQueue(&q);
   clock_t start, end;
 
-
+  /*
   printf("Checking neighbors...\n");
   int var, val;
   for (var = 0; var < NUM_SLOTS; var++) {
@@ -138,6 +138,7 @@ int main(int argc, char *argv[]) {
     }
     printf("\n");
   }
+  */
 
 
 

@@ -43,13 +43,16 @@ Queue *initQueue(Queue **q) {
   return (*q);
 }
 
-void enqueue(Queue **q, int **item) {
+void enqueue(Queue **q, int Xi, int Xj) {
   (*q)->currSize += 1;
-  if (isFull(*q)) { resizeQueue(q); }
+  if (isFull(*q)) {
+    printf("Resizing queue...\n");
+    resizeQueue(q);
+  }
 
   int nextIndex = ((*q)->tail + 1) % (*q)->maxSize;
-  (*q)->tuples[nextIndex][0] = (*item)[0];
-  (*q)->tuples[nextIndex][1] = (*item)[1];
+  (*q)->tuples[nextIndex][0] = Xi;
+  (*q)->tuples[nextIndex][1] = Xj;
 
   (*q)->tail = nextIndex;
 }

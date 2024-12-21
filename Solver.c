@@ -6,16 +6,16 @@
 int AC3(Queue **q, CSP **csp) {
   if ((*q)->currSize == 0) {
     int var;
-    for (var = 0; var < NUM_SLOTS; var++) {
-      get_queue(*csp, q, var);
+    for (var = 0; var < (*csp)->numVars; var++) {
+      get_queue(csp, q, (*csp)->variables[var]);
     }
   }
 
   printf("Queue has %d items.\n\n", (*q)->currSize);
 
   int *X = calloc(2, sizeof(int));
-  int *newTuple = calloc(2, sizeof(int));
   int domain, qIndex, isInQueue, nIndex, isNeighbor;
+
   while ((*q)->currSize != 0) {
     dequeue(q, &X);
 
@@ -50,9 +50,8 @@ int AC3(Queue **q, CSP **csp) {
 	}
 	if (isInQueue == 1) { continue; }
 
-	newTuple[0] = domain, newTuple[1] = X[0];
 	printf("(%d, %d) now enqueued\n", domain, X[0]);
-	enqueue(q, &newTuple);
+	enqueue(q, domain, X[0]);
       } // End for loop
     } // End revise
     else { printf("No revisision for (%d, %d)!\n", X[0], X[1]); }
@@ -60,8 +59,6 @@ int AC3(Queue **q, CSP **csp) {
 
   free(X);
   X = NULL;
-  free(newTuple);
-  newTuple = NULL;
 
   // All variables have been assigned without conflict - now update csp's assignments
   infer_assignment(csp);
@@ -166,16 +163,14 @@ int select_unassigned_variable(CSP *csp) {
 }
 
 
-void get_queue(CSP *csp, Queue **q, int variable) {
-  // We want to find each variable-variable pair that is in the same row and/or
-  // column, which will help us check our possible solution against our constraint
+void get_queue(CSP **csp, Queue **q, int variable) {
+  // We want to find each variable-variable pair that is in the same row/column/box,
+  // which will help us check our possible solution against our constraint
   int nIndex;
-  int *tuple = calloc(2, sizeof(int));
-  tuple[1] = variable;
+  printf("Neighbors of %d:", variable);
   for (nIndex = 0; nIndex < NUM_NEIGHBORS; nIndex++) {
-    tuple[0] = csp->neighbors[variable][nIndex];
-    enqueue(q, &tuple);
+    printf(" %d", (*csp)->neighbors[variable][nIndex]);
+    enqueue(q, variable, (*csp)->neighbors[variable][nIndex]);
   }
-  free(tuple);
-  tuple = NULL;
+  printf("\n");
 }

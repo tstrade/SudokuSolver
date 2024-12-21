@@ -9,7 +9,7 @@ int revise(CSP **csp, int Xi, int Xj);
 int *backtracking_search(CSP **csp);
 int *backtrack(CSP **csp);
 int select_unassigned_variable(CSP *csp);
-void get_queue(CSP *csp, Queue **q, int variable);
+void get_queue(CSP **csp, Queue **q, int variable);
 
 
 #endif
