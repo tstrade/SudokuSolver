@@ -141,6 +141,8 @@ CSP *initCSP(CSP **self) {
 
   (*self)->numVars = 0;
 
+  (*self)->curr_domains = NULL;
+
   initNeighbors(self);
 
   return *self;
@@ -260,7 +262,7 @@ int goal_test(CSP *self) {
 
 void support_pruning(CSP **self) {
   if ((*self)->curr_domains != NULL) { return; }
-  printf("Establishing current domains...\n");
+  // printf("Establishing current domains...\n");
   int var, val;
 
   (*self)->curr_domains = malloc(NUM_SLOTS * sizeof(int *));
@@ -276,7 +278,20 @@ void support_pruning(CSP **self) {
       }
     } // End values loop
   } // End slots loop
-  printf("Pruning now supported!\n");
+  // printf("Pruning now supported!\n");
+
+  // Get rid of domain values if neighbor is already assigned
+  int nIndex, neighbor;
+  for (var = 0; var < (*self)->numVars; var++) {
+    for (val = 0; val < NUM_VALUES; val++) {
+      for (nIndex = 0; nIndex < NUM_NEIGHBORS; nIndex++) {
+	neighbor = (*self)->neighbors[(*self)->variables[var]][nIndex];
+	if ((*self)->curr_domains[(*self)->variables[var]][val] == (*self)->assignment[neighbor]) {
+	  prune(self, var, (*self)->assignment[neighbor]);
+	}
+      } // End neighbor loop
+    } // End value loop
+  } // End variable loop
 }
 
 
@@ -318,10 +333,10 @@ void infer_assignment(CSP **self) {
       }
     }
 
-    if (count((*self)->curr_domains[var]) != 1) {
-      (*self)->inference[var] = possibleInference;
+    if (count((*self)->curr_domains[var]) == 1) {
+      (*self)->assignment[var] = possibleInference;
     } else {
-      (*self)->inference[var] = 0;
+      (*self)->assignment[var] = 0;
     }
   }
 }

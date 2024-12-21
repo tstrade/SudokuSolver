@@ -19,6 +19,7 @@ int AC3(Queue **q, CSP **csp) {
   while ((*q)->currSize != 0) {
     dequeue(q, &X);
 
+    // Check for constraint violations between first pair of neighbors
     if (revise(csp, X[0], X[1]) == 1) {
       if (count((*csp)->curr_domains[X[0]]) == 0) {
 	printf("Found empty domain for variable %d with %d items left in queue!\n", X[0], (*q)->currSize);
@@ -27,7 +28,7 @@ int AC3(Queue **q, CSP **csp) {
 
       for (domain = 0; domain < NUM_SLOTS; domain++) {
 	// Don't enqueue a tuple consisting of the same variable ((0,0), (1,1), etc.)
-	if (domain == X[1]) { continue; }
+	if (domain == X[0] || domain == X[1]) { continue; }
 
 	// Don't enqueue a tuple consisting of non-neighboring variables (constraint doesn't apply)
 	nIndex = 0, isNeighbor = 0;
@@ -50,9 +51,11 @@ int AC3(Queue **q, CSP **csp) {
 	if (isInQueue == 1) { continue; }
 
 	newTuple[0] = domain, newTuple[1] = X[0];
+	printf("(%d, %d) now enqueued\n", domain, X[0]);
 	enqueue(q, &newTuple);
       } // End for loop
     } // End revise
+    else { printf("No revisision for (%d, %d)!\n", X[0], X[1]); }
   } // End while
 
   free(X);
@@ -61,16 +64,7 @@ int AC3(Queue **q, CSP **csp) {
   newTuple = NULL;
 
   // All variables have been assigned without conflict - now update csp's assignments
-  int var, val;
-  for (var = 0; var < NUM_SLOTS; var++) {
-    for (val = 0; val < NUM_VALUES; val++) {
-      if ((*csp)->curr_domains[var][val] == 0) {
-	continue;
-      } else {
-        assign(csp, var, val + 1);
-      }
-    }
-  }
+  infer_assignment(csp);
 
   return 1;
 }
@@ -78,26 +72,39 @@ int AC3(Queue **q, CSP **csp) {
 int revise(CSP **csp, int Xi, int Xj) {
   int revised = 0; // false
   // If Xi is not a variable, it cannot be unassigned its value
-  if (isVariable(*csp, Xi) == 0) { return revised; }
+  if (isVariable(*csp, Xi) == 0) {
+    printf("%d is not a variable!\n", Xi);
+    return revised;
+  }
 
   // Want to see which values in Xi's current domain satisfy the rules of Soduku
   int XiValue, XjValue, val, unsatisfied;
 
   for (val = 0; val < NUM_VALUES; val++) {
+    // If Xj is not a variable, we need to use its assigned value
+    // since all atomics have current domains of 0's
+    if (isVariable(*csp, Xj) == 0) { XjValue = (*csp)->assignment[Xj]; }
+    else { XjValue = (*csp)->curr_domains[Xj][val]; }
+
     // If val is not in Xj's current domain, there is no conflict
-    XjValue = (*csp)->curr_domains[Xj][val];
-    if (XjValue == 0) { continue; }
+    if (XjValue == 0) {
+      printf("%d is not in %d's domain for (%d, %d)!\n", XjValue, Xj, Xi, Xj);
+      continue;
+    }
 
     // If val is not in Xi's current domain, there is no conflict
     XiValue = (*csp)->curr_domains[Xi][val];
-    if (XiValue == 0) { continue; }
+    if (XiValue == 0) {
+      printf("%d is not in %d's domain for (%d, %d)!\n", XiValue, Xi, Xi, Xj);
+      continue;
+    }
 
-    // Since Xi and Xj are neighbors (as per the enqueue process in AC3)
-    // We check if the constraint is satisfied between their current domains
+    // Since Xi and Xj are neighbors (as per the enqueue process in AC3),
+    // we check if the constraint is satisfied between their current domains
     unsatisfied = (*csp)->constraint(Xi, XiValue, Xj, XjValue);
 
-    // If the values being considered for variable Xi have any conflicts with
-    // the value assigned to Xj, remove the values from Xi's current domain
+    // If the values being considered for variable Xi have any conflicts,
+    // remove the values from Xi's current domain
     if (unsatisfied != 0) {
       printf("Getting rid of %d from %d's domain due to conflict with %d.\n", XiValue, Xi, Xj);
       prune(csp, Xi, XiValue);

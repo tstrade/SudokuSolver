@@ -39,32 +39,21 @@ Soduku *initBoard(Soduku **self, char *initialPositions) {
   (*self)->csp->variables = malloc((*self)->csp->numVars * sizeof(int));
   checkNULL((void *)(*self)->csp->variables);
 
-  support_pruning(&((*self)->csp));
-
-  // Remove any values from the domains of the neighboring slots
-  // that violate the constraints with the initial board layout
-  int n, neighbor, assigned, v = 0;
+  // Track all of the current variables on the board
+  int v = 0;
   for (variable = 0; variable < NUM_SLOTS; variable++) {
-    assigned = (*self)->csp->assignment[variable];
-
-    if (assigned == 0) {
+    if ((*self)->csp->assignment[variable] == 0) {
       (*self)->csp->variables[v] = variable;
       v++;
-      continue;
     }
-
-    printf("Clearing neighboring domains from initial assignments\n");
-    for (n = 0; n < NUM_NEIGHBORS; n++) {
-      neighbor = (*self)->csp->neighbors[variable][n];
-
-      if ((*self)->csp->curr_domains[neighbor][assigned - 1] != 0) {
-	prune(&((*self)->csp), neighbor, assigned);
-      }
-    }
-
-    prune(&((*self)->csp), variable, assigned - 1);
   }
-  printf("Done clearing neighboring domains.\n");
+
+  infer_assignment(&((*self)->csp));
+
+
+
+  showVars(*self);
+  showCurrentDomains(*self);
   return *self;
 }
 
@@ -74,6 +63,7 @@ void showVars(Soduku *self) {
   for (variable = 0; variable < self->csp->numVars; variable++) {
     printf("%d  ", self->csp->variables[variable]);
   }
+  printf("\n\n");
 }
 
 void showCurrentDomains(Soduku *self) {
@@ -105,7 +95,7 @@ void showRemovals(Soduku *self) {
         printf("%d  ", self->csp->removals[variable][values]);
       }
     }
-    printf("\n");
+    printf("\n\n");
   }
 }
 
@@ -133,11 +123,12 @@ int main(int argc, char *argv[]) {
   display(board->csp);
   printf("\n\n Time to solve!\n\n");
 
+
   Queue *q = NULL;
   q = initQueue(&q);
   clock_t start, end;
 
-  /*
+
   printf("Checking neighbors...\n");
   int var, val;
   for (var = 0; var < NUM_SLOTS; var++) {
@@ -147,7 +138,10 @@ int main(int argc, char *argv[]) {
     }
     printf("\n");
   }
-  */
+
+
+
+
 
   printf("Starting the solve with AC3 procedure...\n");
   start = clock();
