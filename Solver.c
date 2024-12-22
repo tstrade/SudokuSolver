@@ -3,6 +3,8 @@
 #include "datastructs.c"
 #include <stdlib.h>
 
+int bcount;
+
 int AC3(Queue *q, CSP *csp) {
   if (q->currSize == 0) {
     int var;
@@ -13,10 +15,8 @@ int AC3(Queue *q, CSP *csp) {
 
   int *X = calloc(2, sizeof(int));
   int domain, qIndex, isInQueue, nIndex, isNeighbor;
-  printf("Queue size is %d\n", q->currSize);
   while (q->currSize != 0) {
     dequeue(q, X);
-    printf("Queue size is %d\n", q->currSize);
 
     // Check for constraint violations between first pair of neighbors
     if (revise(csp, X[0], X[1]) == 1) {
@@ -49,9 +49,8 @@ int AC3(Queue *q, CSP *csp) {
 	}
 	if (isInQueue == 1) { continue; }
 
-	printf("(%d, %d) now enqueued\n", domain, X[0]);
 	enqueue(q, domain, X[0]);
-	printf("Queue size is now %d\n", q->currSize);
+
       } // End for loop
     } // End revise
   } // End while
@@ -89,13 +88,11 @@ int revise(CSP *csp, int Xi, int Xj) {
 
     // If the constraint is violated, remove the value from Xi's domain
     if (satisfied == 0) {
-      printf("Getting rid of %d from %d's domain due to conflict with %d.\n", XiValue, Xi, Xj);
       prune(csp, Xi, XiValue);
       revised = 1;
     }
   } // End Xi domain loop
 
-  printf("Done revising (%d, %d)\n", Xi, Xj);
   return revised;
 }
 
@@ -103,27 +100,31 @@ int *backtracking_search(CSP *csp) {
   return backtrack(csp);
 }
 
+// Unsorted domain of 0: 1, 2, 3, 4, 5, 6, 7, 8, 9
+// Sorted domain of 0:   4, 5, 1, 2, 3, 6, 7, 8, 9
+
+void order_domain_values(CSP *csp, int variable, int **ordered_domain) {
+  int i, numConflicts, leastConflicts, val = 0;
+
+  while (val != NUM_VALUES) {
+    for (i = 0; i < NUM_VALUES; i++) {
+
+    }
+  }
+}
+
 int *backtrack(CSP *csp) {
+  printf("\n  Called backtrack %d times", ++bcount);
   // If board is completed correctly, return assignments
   if (goal_test(csp) == 1) { return csp->assignment; }
 
-  // If all variables are assigned, but board is incorrect
-  // Look for the variable with the most conflicts
+  // Select an unassigned variable with the smallest domain
   int variable = select_unassigned_variable(csp);
-  if (variable == -1) {
-    int i, currConflicts;
-    int mostConflicts[2]= {0,0};
-    for (i = 0; i < NUM_SLOTS; i++) {
-      // Check how many conflicts the current assignment has
-      currConflicts = nconflicts(csp, i, csp->assignment[i]);
-      if (currConflicts > mostConflicts[1]) {
-	mostConflicts[0] = i, mostConflicts[1] = currConflicts;
-      }
-    } // End variable loop
-    variable = mostConflicts[0];
-  }
+  printf("Next unassigned variable is %d\n", variable);
 
   int val, conflicts, *result;
+  int ordered_domain[NUM_VALUES] = {0,0,0,0,0,0,0,0,0} ;
+
   for (val = 0; val < NUM_VALUES; val++) {
     conflicts = nconflicts(csp, variable, val);
 
@@ -141,11 +142,21 @@ int *backtrack(CSP *csp) {
 }
 
 int select_unassigned_variable(CSP *csp) {
-  int var;
+  int var, variable, smallestDomain, tempSize, domainSize = 0;
   for (var = 0; var < csp->numVars; var++) {
-    if (csp->assignment[csp->variables[var]] == 0) { return var; } // Return first unassigned variable
+    variable = csp->variables[var];
+    if (csp->assignment[variable] != 0) { continue; }
+    tempSize = count(csp->curr_domains[variable]);
+
+    if (domainSize == 0) {
+      smallestDomain = variable;
+      domainSize = tempSize;
+    } else if (domainSize > tempSize) {
+      smallestDomain = variable;
+      domainSize = tempSize;
+    }
   }
-  return -1; // All variables assigned a value
+  return smallestDomain;
 }
 
 

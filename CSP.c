@@ -119,6 +119,15 @@ CSP *initCSP(CSP *self) {
   self->assignment = calloc(NUM_SLOTS, sizeof(int));
   checkNULL((void *)self->inference);
 
+  actionOptions = malloc(NUM_VALUES * sizeof(int *));
+  checkNULL((void *)actionOptions);
+
+  int varValTuple;
+  for (varValTuple = 0; varValTuple < NUM_VALUES; varValTuple++) {
+    actionOptions[varValTuple] = calloc(2, sizeof(int));
+    checkNULL((void *)actionOptions[varValTuple]);
+  }
+
   // Assign the Soduku Rules to the CSP constaint function
   self->constraint = Soduku_Constraint;
 
@@ -184,18 +193,6 @@ void display(CSP *self) {
 }
 
 int **actions(CSP *self) {
-  int varValTuple;
-
-  if (actionOptions == NULL) {
-    actionOptions = malloc(NUM_VALUES * sizeof(int *));
-    checkNULL((void *)actionOptions);
-
-    for (varValTuple = 0; varValTuple < NUM_VALUES; varValTuple++) {
-      actionOptions[varValTuple] = calloc(2, sizeof(int));
-      checkNULL((void *)actionOptions[varValTuple]);
-    }
-  }
-
   // All assignments have been made - no actions to be taken
   if (count(self->assignment) == NUM_SLOTS) {
     return NULL;
@@ -358,6 +355,7 @@ void destroyCSP(CSP *self) {
     free(self->curr_domains[i]);
     free(self->removals[i]);
   }
+
   for (i = 0; i < NUM_VALUES; i++) {
     free(actionOptions[i]);
   }

@@ -16,7 +16,6 @@
 CSP *initBoard(CSP *board, char *initialPositions) {
   board = initCSP(board);
 
-
   int slot;
   for (slot = 0; slot < NUM_SLOTS; slot++) {
     if (initialPositions[slot] > ASCII_0 && initialPositions[slot] <= ASCII_9) {
@@ -124,18 +123,16 @@ int main(int argc, char *argv[]) {
   }
 
   if (strlen(argv[1]) != NUM_SLOTS) {
-    fprintf(stderr, "\tIncorrect argument size - should be a string of %d characters, with blanks/spaces represented by 0's or .'s\n", NUM_SLOTS);
+    fprintf(stderr, "\tIncorrect argument size - should be a string of %d characters, with blanks/spaces represented by 0's or .'s\n\n", NUM_SLOTS);
     return -1;
   }
 
 
 
   CSP *board = NULL;
-  printf("  Showing initial board setup...\n\n");
+  printf("  Showing initial board setup...\n");
   board = initBoard(board, argv[1]);
-
-  printf("    Time to solve!\n\n");
-
+  printf("\tTime to solve!\n\n");
 
   Queue *q = NULL;
   q = initQueue(q);
@@ -153,17 +150,22 @@ int main(int argc, char *argv[]) {
   }
   display(board);
 
-  printf("\tFreeing memory for the board...\n");
+  printf("  Freeing memory for the board...\n");
   destroyCSP(board);
-  printf("Board successully freed! \n\n Freeing memory for the queue...\n");
+  printf("\tBoard successully freed! \n\n  Freeing memory for the queue...\n");
   destroyQueue(q);
   printf("\tQueue successfully freed!\n");
 
-  sleep(10);
+  for (int i = 0; i < 5; i++) {
+    sleep(1);
+    printf("\n");
+  }
 
+  printf("  Showing initial board setup again...\n");
   board = initBoard(board, argv[1]);
+  printf("\tTime to solve!\n\n");
 
-  printf("\tStarting the solve with Backtracking procedure...\n");
+  printf("  Starting the solve with Backtracking procedure...\n");
   start = clock();
   backtracking_search(board);
   end = clock();
@@ -171,7 +173,7 @@ int main(int argc, char *argv[]) {
   printf("\tBacktracking solved the board in %f seconds.\n\n", difftime(end, start) / CLOCKS_PER_SEC);
   display(board);
 
-  printf("\tFreeing memory for the board...\n");
+  printf("  Freeing memory for the board...\n");
   destroyCSP(board);
   printf("\tBoard successfully freed!\n");
 
