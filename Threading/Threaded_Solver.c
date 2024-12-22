@@ -1,84 +1,42 @@
-#include "Solver.h"
-#include "CSP.c"
-#include "datastructs.c"
+#include "Threaded_Solver.h"
+#include "Threads.c"
 
 #include <stdlib.h>
 #include <unistd.h>
 #include <pthread.h>
 
-struct AC3_args {
-  CSP *csp;
-  Queue *q;
-  int slot;
-  protect *knight;
-};
-
-AC3_args *initAC3Args(CSP *csp, Queue *q, int slot, protect *knight) {
-  AC3_args *args = malloc(sizeof(AC3_args));
-  checkNULL((void *)args);
-
-  args->csp = csp;
-  args->q = q;
-  args->slot = slot;
-
-  args->knight = knight;
-
-  return args;
-}
-
-struct protect {
-  volatile int pruning;
-  volatile int readingDomains;
-
-  pthread_mutex_t queue;
-  volatile int readingSize;
-  volatile int queueReceived;
-};
-
-protect *initProtect() {
-  protect *knight = malloc(sizeof(protect));
-  checkNULL((void *)knight);
-
-  knight->pruning = 0;
-  knight->readingDomains = 0;
-  knight->readingSize = 0;
-  pthread_mutex_init(&knight->queue, NULL);
-
-  knight->queueReceived = 0;
-
-  return knight;
-}
-
 void *AC3(void *args) {
   CSP *csp = ((AC3_args *)(args))->csp;
   Queue *q = ((AC3_args *)(args))->q;
-  int slot = ((AC3_args *)(args))->slot;
-  protect *knight = ((AC3_args *)(args))->knight;
+  int *slot = ((AC3_args *)(args))->slot;
+  protector *knight = ((AC3_args *)(args))->knight;
 
-  pthread_mutex_lock(&knight->queue);
-  get_queue(csp, q, slot);
-  pthread_mutex_unlock(&knight->queue);
-
-  while(q->currSize < NUM_SLOTS * NUM_NEIGHBORS || knight->queueReceived);
-  knight->queueReceived = 1;
-
-  int *X = calloc(2, sizeof(int));
-  int domain, qIndex, isInQueue, nIndex, isNeighbor;
-  while (q->currSize != 0) {
-    // Lock inside queue
+  while (*slot < NUM_SLOTS) {
     pthread_mutex_lock(&knight->queue);
+    get_queue(csp, q, *slot);
+    (*slot)++;
+    pthread_mutex_unlock(&knight->queue);
+  }
+
+  int X[2] = { 0, 0 };
+  int domain, qIndex, isInQueue, nIndex, isNeighbor;
+  int Xi, Xj;
+
+  // Don't read the size while it is changing
+  pthread_mutex_lock(&knight->queue);
+  while (q->currSize != 0) {
+    // Locking at the end of the while loop keeps the queue and it's size protected
     dequeue(q, X);
     pthread_mutex_unlock(&knight->queue);
 
-    // Check for constraint violations between first pair of neighbors
-    if (revise(csp, X[0], X[1], knight) == 1) {
+    Xi = X[0], Xj = X[1];
 
-      while (knight->pruning);
-      knight->readingDomains++;
-      if (count(csp->curr_domains[X[0]]) == 0) {
-	fprintf(stderr, "AC3 Failed!\n"); exit(EXIT_FAILURE);
-      }
-      knight->readingDomains--;
+    // Check for constraint violations between first pair of neighbors
+    if (revise(csp, Xi, Xj, knight) == 1) {
+
+      sem_wait(&knight->pruning); // If pruning, wait until done
+      if (count(csp->curr_domains[X[0]]) == 0) { fprintf(stderr, "AC3 Failed!\n"); exit(EXIT_FAILURE); }
+      sem_post(&knight->pruning); // If only reading, let other threads pass
 
       for (domain = 0; domain < NUM_SLOTS; domain++) {
 	// Don't enqueue a tuple consisting of the same variable ((0,0), (1,1), etc.)
@@ -95,7 +53,7 @@ void *AC3(void *args) {
 	if (isNeighbor == 0) { continue; }
 
 	// Don't enqueue the tuple exists in the queue already
-	pthread_mutex_lock(&knight->queue);
+	pthread_mutex_lock(&knight->queue); // If writing/reading queue, do not read/write queue
 	qIndex = q->head, isInQueue = 0;
 	while (qIndex != q->tail && isInQueue != 1) {
 	  if (domain == q->tuples[qIndex][0] && X[0] == q->tuples[qIndex][1]) {
@@ -104,6 +62,8 @@ void *AC3(void *args) {
 	  qIndex = (qIndex + 1) % q->maxSize;
 	}
 
+	// Don't unlock the mutex until tuple has either been queued
+	// or found to be already in the queue
 	if (isInQueue == 1) {
 	  pthread_mutex_unlock(&knight->queue);
 	  continue;
@@ -114,36 +74,36 @@ void *AC3(void *args) {
 
       } // End for loop
     } // End revise
+    pthread_mutex_lock(&knight->queue);
   } // End while
-
-  free(X);
-  X = NULL;
+  pthread_mutex_unlock(&knight->queue);
 
   pthread_exit((void *) 0);
 }
 
-int revise(CSP *csp, int Xi, int Xj, protect *knight) {
+int revise(CSP *csp, int Xi, int Xj, protector *knight) {
   int revised = 0; // false
 
   // Want to see which values in Xi's current domain satisfy the rules of Soduku
   int XiValue, XjValue, valXi, valXj, satisfied;
 
   for (valXi = 0; valXi < NUM_VALUES; valXi++) {
-    // If val is not in Xi's current domain, there is no conflict
-
-    while (knight->pruning);
-    knight->readingDomains++;
+    while (knight->busyPruning == 0) { sem_getvalue(&knight->pruning, &knight->busyPruning); }
+    sem_wait(&knight->readingDomains);
     XiValue = csp->curr_domains[Xi][valXi];
-    knight->readingDomains--;
-
+    sem_post(&knight->readingDomains);
+    // If val is not in Xi's current domain, there is no conflict
     if (XiValue == 0) { continue; }
 
     satisfied = 0;
     for (valXj = 0; valXj < NUM_VALUES; valXj++) {
-      while (knight->pruning);
-      knight->readingDomains++;
+
+      while (knight->busyPruning == 0) { sem_getvalue(&knight->pruning, &knight->busyPruning); }
+      // Allow NUM_SLOTS threads to read domains at a time
+      // will also end up blocking prune() until no one is reading
+      sem_wait(&knight->readingDomains);
       XjValue = csp->curr_domains[Xj][valXj];
-      knight->readingDomains--;
+      sem_post(&knight->readingDomains);
 
       // If val is not in Xj's current domain, there is no conflict
       if (XjValue == 0) { continue; }
@@ -156,12 +116,13 @@ int revise(CSP *csp, int Xi, int Xj, protect *knight) {
 
     // If the constraint is violated, remove the value from Xi's domain
     if (satisfied == 0) {
-      while (knight->readingDomains > 0);
-      knight->pruning = 1;
+      while (knight->busyReading < NUM_SLOTS) { sem_getvalue(&knight->readingDomains, &knight->busyReading); }
+      // Only one thread should be able to prune at a time
+      sem_wait(&knight->pruning);
       prune(csp, Xi, XiValue);
-      knight->pruning = 0;
+      sem_post(&knight->pruning);
 
-      // Unlock removals and domains
+
       revised = 1;
     }
   } // End Xi domain loop
@@ -176,20 +137,4 @@ void get_queue(CSP *csp, Queue *q, int variable) {
   for (nIndex = 0; nIndex < NUM_NEIGHBORS; nIndex++) {
     enqueue(q, csp->neighbors[variable][nIndex], variable);
   }
-}
-
-void destroyAC3Args(AC3_args *args) {
-  destroyCSP(args->csp);
-  destroyQueue(args->q);
-  destroyProtect(args->knight);
-
-  free(args);
-  args = NULL;
-}
-
-void destroyProtect(protect *knight) {
-  pthread_mutex_destroy(&knight->queue);
-
-  free(knight);
-  knight = NULL;
 }

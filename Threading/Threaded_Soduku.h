@@ -1,5 +1,5 @@
-#ifndef SODUKU_H
-#define SODUKU_H
+#ifndef THREADED_SODUKU_H
+#define THREADED_SODUKU_H
 
 CSP *initBoard(CSP *board, char *initialPositions);
 void showVars(CSP *board);
