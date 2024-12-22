@@ -45,16 +45,13 @@ Queue *initQueue(Queue *q) {
 
 void enqueue(Queue *q, int Xi, int Xj) {
   q->currSize += 1;
-  if (isFull(q)) {
-    //printf("Resizing queue...\n");
-    resizeQueue(q);
-  }
+  if (isFull(q)) { resizeQueue(q); }
 
-  int nextIndex = (q->tail + 1) % q->maxSize;
-  q->tuples[nextIndex][0] = Xi;
-  q->tuples[nextIndex][1] = Xj;
+  //printf("Endqueuing (Variable %d, Neighbor %d)\n", Xi, Xj);
+  q->tuples[q->tail][0] = Xi;
+  q->tuples[q->tail][1] = Xj;
+  q->tail = (q->tail + 1) % q->maxSize;
 
-  q->tail = nextIndex;
 }
 
 void dequeue(Queue *q, int *item) {
