@@ -7,23 +7,27 @@
 #include <time.h>
 
 void *AC3(void *args) {
-  CSP *csp = ((AC3_args *)(args))->csp;
-  Queue *q = ((AC3_args *)(args))->q;
-  int slot = ((AC3_args *)(args))->slot;
-  protector *knight = ((AC3_args *)(args))->knight;
+  CSP *csp = ((AC3_args *)args)->csp;
+  protector *knight = ((AC3_args *)args)->knight;
+
+  Queue *q = NULL;
+  q = initQueue(q);
+
+  pthread_mutex_lock(&knight->assigningSlot);
+  int slot = ((AC3_args *)args)->slot++;
+  pthread_mutex_unlock(&knight->assigningSlot);
 
   get_queue(csp, q, slot);
 
-  int X[2] = { 0, 0 };
+  int Xi, Xj, X[2] = { 0, 0 };
   int domain, qIndex, isInQueue, nIndex, isNeighbor;
-  int Xi, Xj;
-  while (q->currSize != NUM_SLOTS * NUM_NEIGHBORS);
 
   while (1) {
+    while (isEmpty(q)) { if (knight->goalTest) { break; } }
+
     pthread_mutex_lock(&knight->queue);
-    if (isEmpty(q)) { pthread_mutex_unlock(&knight->queue); break; }
     dequeue(q, X);
-    qIndex = q->head;
+    qIndex = q->head; // Might want to try moving this
     pthread_mutex_unlock(&knight->queue);
 
     Xi = X[0], Xj = X[1];
@@ -49,29 +53,42 @@ void *AC3(void *args) {
 
         isInQueue = 0; // Don't enqueue the tuple if it exists in the queue already
 
-	sem_wait(&knight->searchingQ);
-	while (knight->busyEditing == 0) { sem_getvalue(&knight->editingQ, &knight->busyEditing); }
-
+	// Acquire read lock to scan queue for tuple - queue writers will be blocked
+	// Will block if queue writer is already waiting to acquire lock (bounded waiting)
+        pthread_rwlock_rdlock(&knight->rwQueue);
 	while (qIndex != q->tail) {
 	  if (domain == q->tuples[qIndex][0] && X[0] == q->tuples[qIndex][1]) { isInQueue = 1; break; }
-	  else { qIndex = (qIndex + 1) % q->maxSize; }
+	  qIndex = (qIndex + 1) % q->maxSize;
 	}
-	sem_post(&knight->searchingQ);
+	// Release read lock to allow queue writers to acquire lock
+        pthread_rwlock_unlock(&knight->rwQueue);
 
-	// Don't unlock the mutex until tuple has either been queued or found to be already in the queue
-	if (isInQueue == 1) { pthread_mutex_unlock(&knight->queue); continue; }
-	else {
-	  while (knight->busySearching < NUM_SLOTS / 3) { sem_getvalue(&knight->searchingQ, &knight->busySearching); }
+	// If the tuple is in the queue, skip to the next tuple option
+	if (isInQueue == 1) { continue; }
 
-	  sem_wait(&knight->editingQ);
-	  pthread_mutex_lock(&knight->queue);
-	  enqueue(q, domain, X[0]);
-	  sem_post(&knight->editingQ);
-	  pthread_mutex_unlock(&knight->queue);
-	}
+	// Acquire queue lock to avoid clashing with currSize, head, and tail
+	pthread_mutex_lock(&knight->queue);
+	// Acquire write lock to add item to queue - queue readers/writers will be blocked
+	// Will block if queue writer or queue reader already has lock
+	pthread_rwlock_wrlock(&knight->rwQueue);
+	enqueue(q, domain, X[0]);
+	// Release write lock to allow queue readers/writers to acquire lock
+	pthread_rwlock_unlock(&knight->rwQueue);
+	// Release queue lock to allow other threads to enqueue/dequeue
+	pthread_mutex_unlock(&knight->queue);
 
       } // End for loop
     } // End revise
+
+    pthread_mutex_lock(&knight->assigningSlot);
+
+    pthread_rwlock_rdlock(&knight->rwDomains);
+    infer_assignment(csp);
+    pthread_rwlock_unlock(&knight->rwDomains);
+
+    knight->goalTest = goal_test(csp);
+    pthread_mutex_unlock(&knight->assigningSlot);
+
   } // End while
 
   pthread_exit((void *) 0);
@@ -84,22 +101,22 @@ int revise(CSP *csp, int Xi, int Xj, protector *knight) {
   int XiValue, XjValue, valXi, valXj, satisfied;
 
   for (valXi = 0; valXi < NUM_VALUES; valXi++) {
-    // Polling for whether or not prune() is being executed
-    sem_wait(&knight->readingDomains);
-    while (knight->busyPruning == 0) { sem_getvalue(&knight->pruning, &knight->busyPruning); }
+    // Acquire read lock to retrieve domain value
+    pthread_rwlock_rdlock(&knight->rwDomains);
     XiValue = csp->curr_domains[Xi][valXi];
-    sem_post(&knight->readingDomains);
+    pthread_rwlock_unlock(&knight->rwDomains);
+    // Release read lock to allow writers to acquire lock
 
     // If val is not in Xi's current domain, there is no conflict
     if (XiValue == 0) { continue; }
 
     satisfied = 0;
     for (valXj = 0; valXj < NUM_VALUES; valXj++) {
-
-      sem_wait(&knight->readingDomains);
-      while (knight->busyPruning == 0) { sem_getvalue(&knight->pruning, &knight->busyPruning); }
+      // Acquire read lock to retrieve domain value
+      pthread_rwlock_rdlock(&knight->rwDomains);
       XjValue = csp->curr_domains[Xj][valXj];
-      sem_post(&knight->readingDomains);
+      pthread_rwlock_unlock(&knight->rwDomains);
+      // Release read lock to allow writers to acquire lock
 
       // If val is not in Xj's current domain, there is no conflict
       if (XjValue == 0) { continue; }
@@ -111,11 +128,12 @@ int revise(CSP *csp, int Xi, int Xj, protector *knight) {
 
     // If the constraint is violated, remove the value from Xi's domain
     if (satisfied == 0) {
-      // Polling for whether or not there are any threads reading the domains
-      sem_wait(&knight->pruning);
-      while (knight->busyReading < NUM_SLOTS / 3) { sem_getvalue(&knight->readingDomains, &knight->busyReading); }
+
+      // Acquire write lock to change domain value
+      pthread_rwlock_wrlock(&knight->rwDomains);
       prune(csp, Xi, XiValue);
-      sem_post(&knight->pruning);
+      pthread_rwlock_unlock(&knight->rwDomains);
+      // Release lock to allow readers/writers to acquire lock
 
       revised = 1;
     }

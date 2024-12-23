@@ -130,20 +130,15 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-
-
   CSP *board = NULL;
   printf("  Showing initial board setup...\n");
   board = initBoard(board, argv[1]);
 
-
-  Queue *q = NULL;
-  q = initQueue(q);
-
   // initialize protections
   protector *knight = initProtector();
   // initialize args for AC3
-  AC3_args *args = initAC3Args(board, q, knight);
+  AC3_args *args = initAC3Args(board, knight);
+  args->slot = 0;
   // initialize threads
   int t;
   void *status;
@@ -154,7 +149,6 @@ int main(int argc, char *argv[]) {
   start = clock();
 
   for (t = 0; t < NUM_SLOTS; t++) {
-    args->slot = t;
     pthread_create(&threads[t], &knight->attr, AC3, (void *)args);
   }
 

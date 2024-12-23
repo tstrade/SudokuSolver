@@ -14,7 +14,7 @@ int AC3(Queue *q, CSP *csp) {
   }
 
   int *X = calloc(2, sizeof(int));
-  int domain, qIndex, isInQueue, nIndex, isNeighbor;
+  int domain, nIndex, isNeighbor;
   while (q->currSize != 0) {
     dequeue(q, X);
 
@@ -40,14 +40,7 @@ int AC3(Queue *q, CSP *csp) {
 	if (isNeighbor == 0) { continue; }
 
 	// Don't enqueue the tuple exists in the queue already
-	qIndex = q->head, isInQueue = 0;
-	while (qIndex != q->tail && isInQueue != 1) {
-	  if (domain == q->tuples[qIndex][0] && X[0] == q->tuples[qIndex][1]) {
-	    isInQueue = 1;
-	  }
-	  qIndex = (qIndex + 1) % q->maxSize;
-	}
-	if (isInQueue == 1) { continue; }
+        if (q->isInQueue[X[0]][domain] == 1) { continue; }
 
 	enqueue(q, domain, X[0]);
 
@@ -95,7 +88,7 @@ int revise(CSP *csp, int Xi, int Xj) {
 
   return revised;
 }
-
+/*
 int *backtracking_search(CSP *csp) {
   return backtrack(csp);
 }
@@ -158,7 +151,7 @@ int select_unassigned_variable(CSP *csp) {
   }
   return smallestDomain;
 }
-
+*/
 
 void get_queue(CSP *csp, Queue *q, int variable) {
   // We want to find each variable-variable pair that is in the same row/column/box,

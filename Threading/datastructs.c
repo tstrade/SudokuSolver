@@ -1,8 +1,7 @@
 #include "datastructs.h"
+#include "CSP.h"
 #include <stdlib.h>
 #include <stdio.h>
-
-#define SLOTS_TIMES_NEIGHBORS 1620
 
 struct Queue {
   int **tuples;
@@ -19,12 +18,12 @@ Queue *initQueue(Queue *q) {
     exit(EXIT_FAILURE);
   }
 
-  q->maxSize = SLOTS_TIMES_NEIGHBORS;
+  q->maxSize = NUM_NEIGHBORS;
   q->currSize = 0;
   q->head = 0;
   q->tail = 0;
 
-  q->tuples = malloc(SLOTS_TIMES_NEIGHBORS * sizeof(int *));
+  q->tuples = malloc(NUM_NEIGHBORS * sizeof(int *));
 
   if (q->tuples == NULL) {
     fprintf(stderr, "Malloc failed on tuples list!\n");
@@ -32,7 +31,7 @@ Queue *initQueue(Queue *q) {
   }
 
   int tupleIndex;
-  for (tupleIndex = 0; tupleIndex < SLOTS_TIMES_NEIGHBORS; tupleIndex++) {
+  for (tupleIndex = 0; tupleIndex < NUM_NEIGHBORS; tupleIndex++) {
     q->tuples[tupleIndex] = calloc(2, sizeof(int));
 
     if (q->tuples[tupleIndex] == NULL) {
@@ -67,7 +66,7 @@ int *peek(Queue *q) {
 }
 
 int isFull(Queue *q) {
-  return (q->currSize >= SLOTS_TIMES_NEIGHBORS);
+  return (q->currSize >= NUM_NEIGHBORS);
 }
 
 int isEmpty(Queue *q) {

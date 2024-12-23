@@ -8,7 +8,7 @@
 typedef struct AC3_args AC3_args;
 typedef struct protector protector;
 
-AC3_args *initAC3Args(CSP *csp, Queue *q, protector *knight);
+AC3_args *initAC3Args(CSP *csp, protector *knight);
 protector *initProtector();
 
 void destroyAC3Args(AC3_args *args);

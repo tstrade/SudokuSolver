@@ -1,6 +1,6 @@
 DEPS := Threaded_Soduku.c Threaded_Soduku.h CSP.c CSP.h Threaded_Solver.c Threaded_Solver.h datastructs.c datastructs.h
 CC := gcc
-CFLAGS := -g -Wall -Werror -std=c99 -lpthread
+CFLAGS := -g -Wall -Werror -std=gnu99 -pthread
 
 DB := gdb
 DFLAGS := -args
