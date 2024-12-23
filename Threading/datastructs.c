@@ -2,8 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define INIT_SIZE 100
-#define THRESHOLD 0.85
+#define SLOTS_TIMES_NEIGHBORS 1620
 
 struct Queue {
   int **tuples;
@@ -20,20 +19,22 @@ Queue *initQueue(Queue *q) {
     exit(EXIT_FAILURE);
   }
 
-  q->maxSize = INIT_SIZE;
+  q->maxSize = SLOTS_TIMES_NEIGHBORS;
   q->currSize = 0;
   q->head = 0;
   q->tail = 0;
 
-  q->tuples = malloc(INIT_SIZE * sizeof(int *));
+  q->tuples = malloc(SLOTS_TIMES_NEIGHBORS * sizeof(int *));
+
   if (q->tuples == NULL) {
     fprintf(stderr, "Malloc failed on tuples list!\n");
     exit(EXIT_FAILURE);
   }
 
   int tupleIndex;
-  for (tupleIndex = 0; tupleIndex < INIT_SIZE; tupleIndex++) {
+  for (tupleIndex = 0; tupleIndex < SLOTS_TIMES_NEIGHBORS; tupleIndex++) {
     q->tuples[tupleIndex] = calloc(2, sizeof(int));
+
     if (q->tuples[tupleIndex] == NULL) {
       fprintf(stderr, "Calloc failed on tuple #%d!\n", tupleIndex);
       exit(EXIT_FAILURE);
@@ -44,21 +45,20 @@ Queue *initQueue(Queue *q) {
 }
 
 void enqueue(Queue *q, int Xi, int Xj) {
-  q->currSize += 1;
-  if (isFull(q)) { resizeQueue(q); }
+  int tail = q->tail;
 
-  //printf("Endqueuing (Variable %d, Neighbor %d)\n", Xi, Xj);
-  q->tuples[q->tail][0] = Xi;
-  q->tuples[q->tail][1] = Xj;
+  q->tuples[tail][0] = Xi;
+  q->tuples[tail][1] = Xj;
+
   q->tail = (q->tail + 1) % q->maxSize;
-
+  q->currSize += 1;
 }
 
 void dequeue(Queue *q, int *item) {
   item[0] = q->tuples[q->head][0];
   item[1] = q->tuples[q->head][1];
 
-  q->head += 1;
+  q->head = (q->head + 1) % q->maxSize;
   q->currSize -= 1;
 }
 
@@ -67,31 +67,11 @@ int *peek(Queue *q) {
 }
 
 int isFull(Queue *q) {
-  return (q->currSize >= THRESHOLD * q->maxSize);
+  return (q->currSize >= SLOTS_TIMES_NEIGHBORS);
 }
 
 int isEmpty(Queue *q) {
   return (q->currSize == 0);
-}
-
-void resizeQueue(Queue *q) {
-  int newSize = q->maxSize * 2;
-  q->tuples = realloc(q->tuples, newSize * sizeof(int *));
-  if (q->tuples == NULL) {
-    fprintf(stderr, "Realloc failed on resizing!\n");
-    exit(EXIT_FAILURE);
-  }
-
-  int extend;
-  for (extend = q->maxSize; extend < newSize; extend++) {
-    q->tuples[extend] = calloc(2, sizeof(int));
-    if (q->tuples[extend] == NULL) {
-      fprintf(stderr, "Calloc failed on resizing!\n");
-      exit(EXIT_FAILURE);
-    }
-  }
-
-  q->maxSize = newSize;
 }
 
 void destroyQueue(Queue *q) {

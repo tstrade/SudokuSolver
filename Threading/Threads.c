@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <semaphore.h>
 #include <sched.h>
+#include <time.h>
+#include <unistd.h>
 
 int slot;
 
@@ -13,7 +15,7 @@ int slot;
 struct AC3_args {
   CSP *csp;
   Queue *q;
-  int *slot;
+  int slot;
   protector *knight;
 };
 // Pointers all threads to be referencing the same item
@@ -25,7 +27,6 @@ AC3_args *initAC3Args(CSP *csp, Queue *q, protector *knight) {
 
   args->csp = csp;
   args->q = q;
-  args->slot = 0;
 
   args->knight = knight;
 
@@ -41,15 +42,7 @@ void destroyAC3Args(AC3_args *args) {
   args = NULL;
 }
 
-void checkProtections(int status) {
-  if (status) {
-    fprintf(stderr, "Initialzing semaphore failed!\n");
-    exit(EXIT_FAILURE);
-  }
-  return;
-}
 // Need to protect critical sections from race conditions
-//
 struct protector {
   sem_t pruning;
   int busyPruning;
@@ -57,24 +50,36 @@ struct protector {
   int busyReading;
 
   pthread_attr_t attr;
+  pthread_cond_t cond;
   pthread_mutex_t queue;
+  sem_t editingQ;
+  int busyEditing;
+  sem_t searchingQ;
+  int busySearching;
 };
 
 protector *initProtector() {
   protector *knight = malloc(sizeof(protector));
   checkNULL((void *)knight);
 
-  checkProtections(sem_init(&knight->pruning, 0, 1));
+  sem_init(&knight->pruning, 0, 1);
   knight->busyPruning = 1;
 
-  checkProtections(sem_init(&knight->readingDomains, 0, NUM_SLOTS));
+  sem_init(&knight->readingDomains, 0, NUM_SLOTS);
   knight->busyReading = NUM_SLOTS;
 
-  checkProtections(pthread_attr_init(&knight->attr));
-  checkProtections(pthread_attr_setdetachstate(&knight->attr, PTHREAD_CREATE_JOINABLE));
-  checkProtections(pthread_attr_setschedpolicy(&knight->attr, SCHED_RR));
+  pthread_attr_init(&knight->attr);
+  pthread_attr_setdetachstate(&knight->attr, PTHREAD_CREATE_JOINABLE);
 
-  checkProtections(pthread_mutex_init(&knight->queue, NULL));
+  pthread_cond_init(&knight->cond, NULL);
+
+  pthread_mutex_init(&knight->queue, NULL);
+
+  sem_init(&knight->editingQ, 0, 1);
+  knight->busyEditing = 1;
+
+  sem_init(&knight->searchingQ, 0, NUM_SLOTS / 3);
+  knight->busySearching = NUM_SLOTS / 3;
 
   return knight;
 }
@@ -84,7 +89,10 @@ void destroyProtector(protector *knight) {
   sem_destroy(&knight->readingDomains);
 
   pthread_attr_destroy(&knight->attr);
+  pthread_cond_destroy(&knight->cond);
   pthread_mutex_destroy(&knight->queue);
+  sem_destroy(&knight->editingQ);
+  sem_destroy(&knight->searchingQ);
 
   free(knight);
   knight = NULL;

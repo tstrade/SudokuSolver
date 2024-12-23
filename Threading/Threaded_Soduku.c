@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
   // initialize args for AC3
   AC3_args *args = initAC3Args(board, q, knight);
   // initialize threads
-  long t;
+  int t;
   void *status;
   clock_t start, end;
 
@@ -154,10 +154,9 @@ int main(int argc, char *argv[]) {
   start = clock();
 
   for (t = 0; t < NUM_SLOTS; t++) {
+    args->slot = t;
     pthread_create(&threads[t], &knight->attr, AC3, (void *)args);
   }
-
-  pthread_attr_destroy(&knight->attr);
 
   for (t = 0; t < NUM_SLOTS; t++) {
     pthread_join(threads[t], &status);
