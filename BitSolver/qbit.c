@@ -4,47 +4,49 @@
 #include <stdlib.h>
 #include <math.h>
 
-uint *initQbit(ushort idx, ushort neighbor) {
-  uint *qbit = calloc(NUM_SLOTS + METADATA, sizeof(uint));
-
+ulong *initQbit(ushort idx, ushort neighbor) {
+  ulong *qbit = calloc(NUM_SLOTS + METADATA, sizeof(ulong));
   ulong *data = calloc(1, sizeof(ulong));
-  *data = ((1 << neighbor) << SHIFT_NEIGHBOR) | idx;
-  *data = ((ulong)data << sizeof(uint));
+  ulong *tail = calloc(1, sizeof(ulong));
 
-  qbit[HEAD_META] = (uint)(*data >> sizeof(uint));
+  qbit[HEAD_META] = (ulong)data; // Contains tuple and address of next item
+  qbit[TAIL_META] = (ulong)tail; // Contains address of last item only
+
+  ulong mask = (neighbor << SHIFT_NEIGHBOR) | idx;
+  *data = (mask << SHIFT_MASK) | (ulong)tail;
   qbit[SIZE_META]++;
 
   return qbit;
 }
 
-uint *enqueue(uint *qbit, ushort idx, ushort neighbor) {
+ulong *enqueue(ulong *qbit, ushort idx, ushort neighbor) {
   if (qbit == NULL) { qbit = initQbit(idx, neighbor); return qbit; }
-
   qbit[SIZE_META]++;
+  // Add flag that neighbor for slot idx has been queued
   qbit[idx] |= (1 << neighbor);
 
-  // MS half points to the next item; LS half contains the item
-  qbit[NEXT_META] = qbit[TAIL_META];
-  ulong *next = calloc(1, sizeof(ulong));
-  *next = (neighbor << 7) | idx;
-  qbit[TAIL_META] = (uint)(*next >> sizeof(uint));
+  // Same process as initializing the head
+  ulong *oldTail;
+  oldTail = (ulong *)qbit[TAIL_META];
+
+  ulong *newTail = calloc(1, sizeof(ulong));
+  qbit[TAIL_META] = (ulong)newTail;
+
+  ulong mask = ((1 << neighbor) << SHIFT_NEIGHBOR) | idx;
+  *oldTail = (mask << SHIFT_MASK) | (ulong)newTail;
+
   return qbit;
 }
 
-ushort dequeue(uint *qbit) {
-  ulong *data = NULL;
-  data += qbit[HEAD_META];
-  qbit[HEAD_META] = qbit[NEXT_META];
+ulong dequeue(ulong *qbit) {
+  ulong *head = (ulong *)qbit[HEAD_META];
+  ulong tuple = (ulong)(*head >> SHIFT_MASK);
+  ulong *next = (ulong *)(*head & GET_NEXT);
 
-  ushort neighbor = *data & GET_NEIGHBOR;
-  ushort idx= *data & GET_IDX;
-  free(data);
-
-  ulong *next = NULL;
-  next += qbit[NEXT_META];
-  qbit[NEXT_META] = (uint)(*next >> sizeof(uint));
+  qbit[HEAD_META] = (ulong)next;
+  free(head);
 
   qbit[SIZE_META]--;
-  qbit[idx] ^= (~(1 << neighbor));
-  return ((neighbor << SHIFT_NEIGHBOR) | idx);
+
+  return tuple;
 }

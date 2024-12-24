@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
   printf("\tTime to solve!\n\n");
 
   clock_t start, end;
-  uint *qbit = NULL;
+  ulong *qbit = NULL;
 
   printf("  Starting the solve with AC3 procedure...\n");
   start = clock();
