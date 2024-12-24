@@ -3,9 +3,6 @@
 
 #include "qbit.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-
 #define NUM_VALUES 9
 #define NUM_SLOTS 81
 #define NUM_NEIGHBORS 20

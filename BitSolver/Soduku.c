@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
@@ -78,7 +79,7 @@ void showVariableDomain(CSP *board, int variable) {
   printf("Slot %d's current domain: ", variable);
   while (values) {
     if ((board->domains[variable] & values) != 0) {
-      printf("%d  ", (int)log2(board->domains[variable] & values));
+      printf("%d  ", (int)logb(board->domains[variable] & values));
     }
     values >>= 1;
   }

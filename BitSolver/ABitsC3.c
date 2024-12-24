@@ -2,6 +2,10 @@
 #include "qbit.c"
 #include "CSP_Bits.c"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
 int ABitsC3(ulong *qbit, CSP *csp) {
   for (ushort slot = 0; slot < NUM_SLOTS; slot++) {
     for (ushort n = 0; n < NUM_NEIGHBORS; n++) { qbit = enqueue(qbit, slot, csp->neighbors[slot][n]); } }
@@ -45,7 +49,8 @@ int revise(CSP *csp, ushort Xi, ushort Xj) {
     while (Xj_mask) {
       if (!(XjValue & Xj_mask)) { Xj_mask >>= 1; continue; }
 
-      satisfied += constraint(Xi, (ushort)log2(Xi_mask), Xj, (ushort)log2(Xj_mask));
+      satisfied += constraint(Xi, (ushort)logb(Xi_mask), Xj, (ushort)logb(Xj_mask));
+      Xj_mask >>= 1;
     }
 
     if (!satisfied) { csp->domains[Xi] &= (~Xi_mask); revised = 1; }

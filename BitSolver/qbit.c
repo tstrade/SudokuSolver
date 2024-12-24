@@ -2,7 +2,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 
 ulong *initQbit(ushort idx, ushort neighbor) {
   ulong *qbit = calloc(NUM_SLOTS + METADATA, sizeof(ulong));

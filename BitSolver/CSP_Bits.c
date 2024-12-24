@@ -129,7 +129,7 @@ ushort goal_test(CSP *csp) {
 }
 
 void prune(CSP *csp, ushort slot, ushort value) {
-  csp->domains[slot] &= (~(ushort)value);
+  csp->domains[slot] &= (~value);
 }
 
 void infer_assignment(CSP *csp) {
@@ -137,7 +137,7 @@ void infer_assignment(CSP *csp) {
   for (var = 1; var < csp->variables[0]; var++) {
     variable = csp->variables[var];
     if (countBits(csp->domains[variable]) == 1) {
-      csp->assignments[variable] = (ushort)log2(csp->domains[variable]);
+      csp->assignments[variable] = (ushort)logb(csp->domains[variable] + 1);
     }
     else { csp->assignments[variable] = 0; }
   }
