@@ -29,8 +29,6 @@ CSP *initBoard(char *initialPositions) {
   board->variables = realloc(board->variables, (variableCount + 1) * sizeof(ushort));
   display(board);
 
-
-
   for (slot = 0; slot < NUM_SLOTS; slot++) {
     if (board->assignments[slot] == 0) { continue; }
     for (ushort value = 0; value < NUM_VALUES; value++) {
@@ -47,7 +45,7 @@ CSP *initBoard(char *initialPositions) {
 
     for (n = 0; n < NUM_NEIGHBORS; n++) {
       neighbor = board->neighbors[variable][n];
-      if (board->assignments[neighbor]) { prune(board, variable, board->assignments[neighbor]); }
+      if (board->assignments[neighbor]) { prune(board, variable, 1 << n); }
     }
   }
 
@@ -98,18 +96,17 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-
-  uint *inQueue = malloc((NUM_SLOTS + 1) * sizeof(uint));
   CSP *board = NULL;
   printf("  Showing initial board setup...\n");
   board = initBoard(argv[1]);
   printf("\tTime to solve!\n\n");
 
   clock_t start, end;
+  uint *qbit = NULL;
 
   printf("  Starting the solve with AC3 procedure...\n");
   start = clock();
-  int ac3Success = ABitsC3(inQueue, board);
+  int ac3Success = ABitsC3(qbit, board);
   end = clock();
 
   if (ac3Success) {
@@ -129,25 +126,4 @@ int main(int argc, char *argv[]) {
   }
 
   return 0;
-
-  /*
-  printf("  Showing initial board setup again...\n");
-  board = initBoard(board, argv[1]);
-  printf("\tTime to solve!\n\n");
-
-  printf("  Starting the solve with Backtracking procedure...\n");
-  start = clock();
-  backtracking_search(board);
-  end = clock();
-
-  printf("\tBacktracking solved the board in %f seconds.\n\n", difftime(end, start) / CLOCKS_PER_SEC);
-  display(board);
-
-  printf("  Freeing memory for the board...\n");
-  destroyCSP(board);
-  printf("\tBoard successfully freed!\n");
-
-
-  return 0;
-  */
 }

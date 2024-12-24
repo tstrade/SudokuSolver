@@ -2,49 +2,49 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
-struct Qbit {
-  unsigned short Qmask;
-  Qbit *next;
-};
+uint *initQbit(ushort idx, ushort neighbor) {
+  uint *qbit = calloc(NUM_SLOTS + METADATA, sizeof(uint));
 
-Qbit *initQbit(ushort idx, ushort neighbor) {
-  Qbit *qbit = malloc(sizeof(Qbit));
-  qbit->Qmask = (1 << neighbor) | idx;
+  ulong *data = calloc(1, sizeof(ulong));
+  *data = ((1 << neighbor) << SHIFT_NEIGHBOR) | idx;
+  *data = ((ulong)data << sizeof(uint));
+
+  qbit[HEAD_META] = (uint)(*data >> sizeof(uint));
+  qbit[SIZE_META]++;
 
   return qbit;
 }
 
-void destroyQbit(Qbit *qbit) {
-  free(qbit);
-  qbit = NULL;
+uint *enqueue(uint *qbit, ushort idx, ushort neighbor) {
+  if (qbit == NULL) { qbit = initQbit(idx, neighbor); return qbit; }
+
+  qbit[SIZE_META]++;
+  qbit[idx] |= (1 << neighbor);
+
+  // MS half points to the next item; LS half contains the item
+  qbit[NEXT_META] = qbit[TAIL_META];
+  ulong *next = calloc(1, sizeof(ulong));
+  *next = (neighbor << 7) | idx;
+  qbit[TAIL_META] = (uint)(*next >> sizeof(uint));
+  return qbit;
 }
 
-void enqueue(uint *inQueue, Qbit *qbit, ushort idx, ushort neighbor) {
-  inQueue[CURR_SIZE]++;
-  inQueue[idx] |= ((unsigned)1 << neighbor);
+ushort dequeue(uint *qbit) {
+  ulong *data = NULL;
+  data += qbit[HEAD_META];
+  qbit[HEAD_META] = qbit[NEXT_META];
 
-  if (qbit == NULL) { qbit = initQbit(idx, neighbor); return; }
+  ushort neighbor = *data & GET_NEIGHBOR;
+  ushort idx= *data & GET_IDX;
+  free(data);
 
-  while (qbit->next != NULL) { qbit = qbit->next; }
-  qbit->next = initQbit(idx, neighbor);
-}
+  ulong *next = NULL;
+  next += qbit[NEXT_META];
+  qbit[NEXT_META] = (uint)(*next >> sizeof(uint));
 
-Qbit *dequeue(uint *inQueue, Qbit *qbit, ushort *tuple) {
-  ushort neighbor = qbit->Qmask & GET_NEIGHBOR;
-  ushort idx = qbit->Qmask & GET_IDX;
-  Qbit *head = qbit->next;
-  destroyQbit(qbit);
-
-  inQueue[CURR_SIZE]--;
-  inQueue[idx] &= (~(1 << neighbor));
-  ushort n_integer = 0;
-  while (neighbor > 0) {
-    neighbor = neighbor >> 1;
-    n_integer++;
-  }
-  tuple[0] = n_integer;
-  tuple[1] = idx;
-
-  return head;
+  qbit[SIZE_META]--;
+  qbit[idx] ^= (~(1 << neighbor));
+  return ((neighbor << SHIFT_NEIGHBOR) | idx);
 }

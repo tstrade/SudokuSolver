@@ -129,7 +129,7 @@ ushort goal_test(CSP *csp) {
 }
 
 void prune(CSP *csp, ushort slot, ushort value) {
-  csp->domains[slot] &= (~(ushort)ldexp(1, value));
+  csp->domains[slot] &= (~(ushort)value);
 }
 
 void infer_assignment(CSP *csp) {
