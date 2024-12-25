@@ -27,7 +27,7 @@ int ABitsC3(ulong *qbit, CSP *csp) {
 	  neighbor++; } while(neighbor ^ NUM_NEIGHBORS); continue;
 
       is_neighbor:
-	if (!(qbit[Xi] & (1 << neighbor))) { continue; }
+	if (qbit[Xi] & (1 << neighbor)) { continue; }
 	enqueue(qbit, slot, Xi);
       } // End for loop
     } // End revise
@@ -41,20 +41,22 @@ int ABitsC3(ulong *qbit, CSP *csp) {
 int revise(CSP *csp, ushort Xi, ushort Xj) {
   ushort revised = 0, satisfied = 0;
   ushort XjValue = csp->domains[Xi], XiValue = csp->domains[Xj];
-  ushort Xj_mask = 0x100, Xi_mask = 0x100;
+  ushort Xj_mask = 0x0100, Xi_mask = 0x0100;
 
   while (Xi_mask) {
     if (!(XiValue & Xi_mask)) { Xi_mask >>= 1; continue; }
     Xj_mask = 0x100;
     while (Xj_mask) {
-      if (!(XjValue & Xj_mask)) { Xj_mask >>= 1; continue; }
+      if (!(XjValue & Xj_mask)) { Xj_mask /= 2; continue; }
 
-      satisfied += constraint(Xi, (ushort)logb(Xi_mask), Xj, (ushort)logb(Xj_mask));
+      satisfied += constraint(Xi, getlog(Xi_mask), Xj, getlog(Xj_mask));
       Xj_mask >>= 1;
     }
 
     if (!satisfied) { csp->domains[Xi] &= (~Xi_mask); revised = 1; }
+
     Xi_mask >>= 1;
   }
+  printf("Revision = %d\n", revised);
   return revised;
 }

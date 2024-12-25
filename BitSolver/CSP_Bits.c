@@ -137,14 +137,14 @@ void infer_assignment(CSP *csp) {
   for (var = 1; var < csp->variables[0]; var++) {
     variable = csp->variables[var];
     if (countBits(csp->domains[variable]) == 1) {
-      csp->assignments[variable] = (ushort)logb(csp->domains[variable] + 1);
+      csp->assignments[variable] = getlog(csp->domains[variable] + 1);
     }
     else { csp->assignments[variable] = 0; }
   }
 }
 
 ushort constraint(ushort A_slot, ushort A_value, ushort B_slot, ushort B_value) {
-  return !((A_slot ^ B_slot) & (A_value ^ B_value));
+  return (((A_slot ^ B_slot) ^ (A_value ^ B_value)) ? 0 : 1);
 }
 
 ushort countEntries(ushort *sequence, ushort size) {
@@ -170,6 +170,12 @@ ushort getCol(ushort slot) {
 ushort isVariable(CSP *csp, ushort slot) {
   if (!csp->assignments[slot]) { return 1; }
   return 0;
+}
+
+ushort getlog(ushort n) {
+  float f = (float)n;
+  unsigned int *p = (unsigned int *)&f;
+  return ((LOG_2 & *p) >> SHIFT_EXP) - BIAS;
 }
 
 void destroyCSP(CSP *csp) {

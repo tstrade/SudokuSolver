@@ -79,7 +79,7 @@ void showVariableDomain(CSP *board, int variable) {
   printf("Slot %d's current domain: ", variable);
   while (values) {
     if ((board->domains[variable] & values) != 0) {
-      printf("%d  ", (int)logb(board->domains[variable] & values));
+      printf("%d  ", (int)getlog(board->domains[variable] & values));
     }
     values >>= 1;
   }

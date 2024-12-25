@@ -11,9 +11,11 @@ ulong *initQbit(ushort idx, ushort neighbor) {
   qbit[HEAD_META] = (ulong)data; // Contains tuple and address of next item
   qbit[TAIL_META] = (ulong)tail; // Contains address of last item only
 
-  ulong mask = (neighbor << SHIFT_NEIGHBOR) | idx;
+  ulong mask = (1 << (neighbor + SHIFT_NEIGHBOR)) | idx;
   *data = (mask << SHIFT_MASK) | (ulong)tail;
   qbit[SIZE_META]++;
+
+  qbit[idx] |= (1 << neighbor);
 
   return qbit;
 }
@@ -31,7 +33,7 @@ ulong *enqueue(ulong *qbit, ushort idx, ushort neighbor) {
   ulong *newTail = calloc(1, sizeof(ulong));
   qbit[TAIL_META] = (ulong)newTail;
 
-  ulong mask = ((1 << neighbor) << SHIFT_NEIGHBOR) | idx;
+  ulong mask = (1 << (neighbor + SHIFT_NEIGHBOR)) | idx;
   *oldTail = (mask << SHIFT_MASK) | (ulong)newTail;
 
   return qbit;
@@ -46,6 +48,7 @@ ulong dequeue(ulong *qbit) {
   free(head);
 
   qbit[SIZE_META]--;
+  qbit[tuple & GET_IDX] &= (~(tuple >> SHIFT_NEIGHBOR));
 
   return tuple;
 }

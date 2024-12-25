@@ -8,6 +8,10 @@
 #define NUM_NEIGHBORS 20
 #define NUM_BOX 3
 
+#define LOG_2 0x7F800000
+#define BIAS 127
+#define SHIFT_EXP 23
+
 typedef struct CSP CSP;
 
 void initNeighbors(CSP *csp);
@@ -23,6 +27,7 @@ ushort countBits(ushort sequence);
 ushort getRow(ushort slot);
 ushort getCol(ushort slot);
 ushort isVariable(CSP *csp, ushort slot);
+ushort getlog(ushort n);
 void destroyCSP(CSP *csp);
 
 #endif
