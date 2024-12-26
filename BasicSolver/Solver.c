@@ -14,35 +14,35 @@ int AC3(Queue *q, CSP *csp) {
   }
 
   int *X = calloc(2, sizeof(int));
-  int domain, nIndex, isNeighbor;
+  int domain, nIndex;
   while (q->currSize != 0) {
     dequeue(q, X);
+    int Xi = X[0], Xj = X[1];
 
     // Check for constraint violations between first pair of neighbors
-    if (revise(csp, X[0], X[1]) == 1) {
-      if (count(csp->curr_domains[X[0]]) == 0) {
-	printf("Found empty domain for variable %d with %d items left in queue!\n", X[0], q->currSize);
+    if (revise(csp, Xi, Xj) == 1) {
+      if (count(csp->curr_domains[Xi], NUM_VALUES) == 0) {
+	printf("Found empty domain for variable %d with %d items left in queue!\n", Xi, q->currSize);
 	return 0;
       }
 
       for (domain = 0; domain < NUM_SLOTS; domain++) {
 	// Don't enqueue a tuple consisting of the same variable ((0,0), (1,1), etc.)
-	if (domain == X[0]) { continue; }
+	if (domain == Xj) { continue; }
 
 	// Don't enqueue a tuple consisting of non-neighboring variables (constraint doesn't apply)
-	nIndex = 0, isNeighbor = 0;
-        while (nIndex != NUM_NEIGHBORS && isNeighbor != 1) {
-	  if (X[0] == csp->neighbors[domain][nIndex]) {
-	    isNeighbor = 1;
-	  }
+	nIndex = 0;
+        while (nIndex != NUM_NEIGHBORS) {
+	  if (Xi == csp->neighbors[domain][nIndex]) { goto is_neighbor; }
 	  nIndex++;
 	}
-	if (isNeighbor == 0) { continue; }
+        continue;
 
+      is_neighbor:
 	// Don't enqueue the tuple exists in the queue already
-        if (q->isInQueue[X[0]][domain] == 1) { continue; }
+        if (q->isInQueue[domain][Xi] == 1) { continue; }
 
-	enqueue(q, domain, X[0]);
+	enqueue(q, domain, Xi);
 
       } // End for loop
     } // End revise
@@ -88,70 +88,68 @@ int revise(CSP *csp, int Xi, int Xj) {
 
   return revised;
 }
-/*
+
 int *backtracking_search(CSP *csp) {
   return backtrack(csp);
 }
 
-// Unsorted domain of 0: 1, 2, 3, 4, 5, 6, 7, 8, 9
-// Sorted domain of 0:   4, 5, 1, 2, 3, 6, 7, 8, 9
-
-void order_domain_values(CSP *csp, int variable, int **ordered_domain) {
-  int i, numConflicts, leastConflicts, val = 0;
-
-  while (val != NUM_VALUES) {
-    for (i = 0; i < NUM_VALUES; i++) {
-
-    }
-  }
-}
 
 int *backtrack(CSP *csp) {
-  printf("\n  Called backtrack %d times", ++bcount);
+  printf("\n  Called backtrack %d times\n", ++bcount);
   // If board is completed correctly, return assignments
-  if (goal_test(csp) == 1) { return csp->assignment; }
+  if (goal_test(csp)) { printf("Inferring assigment...\n"); infer_assignment(csp); return csp->assignment; }
 
   // Select an unassigned variable with the smallest domain
   int variable = select_unassigned_variable(csp);
-  printf("Next unassigned variable is %d\n", variable);
+  printf("\n  Next unassigned variable is %d\n", variable);
 
-  int val, conflicts, *result;
-  int ordered_domain[NUM_VALUES] = {0,0,0,0,0,0,0,0,0} ;
+  int conflicts, *result;
+  order_domain_values(csp, variable);
 
-  for (val = 0; val < NUM_VALUES; val++) {
-    conflicts = nconflicts(csp, variable, val);
+  for (int value = 0; value < NUM_VALUES; value++) {
+    conflicts = nconflicts(csp, variable, value);
 
-    if (conflicts == 0) {
-      assign(csp, variable, val);
-      suppose(csp, variable, val);
+    if (!conflicts) {
+      assign(csp, variable, value);
+      suppose(csp, variable, value);
       result = backtrack(csp);
 
       if (result != NULL) { return result; }
-      else { unassign(csp, variable); }
+      else { printf("Unassigning %d...\n", variable); unassign(csp, variable); }
     } // End if no conflicts
   } // End for loop
 
+  printf("Backtracking failed... continue debugging :)\n");
+  exit(EXIT_FAILURE);
   return NULL;
 }
 
 int select_unassigned_variable(CSP *csp) {
-  int var, variable, smallestDomain, tempSize, domainSize = 0;
-  for (var = 0; var < csp->numVars; var++) {
-    variable = csp->variables[var];
-    if (csp->assignment[variable] != 0) { continue; }
-    tempSize = count(csp->curr_domains[variable]);
-
-    if (domainSize == 0) {
-      smallestDomain = variable;
-      domainSize = tempSize;
-    } else if (domainSize > tempSize) {
-      smallestDomain = variable;
-      domainSize = tempSize;
+  int smallestDomain, size, domainSize = NUM_VALUES;
+  for (int slot = 0; slot < NUM_SLOTS; slot++) {
+    if (csp->assignment[slot] != 0) { continue; }
+    if ((size = count(csp->curr_domains[slot], NUM_VALUES)) < domainSize) {
+      smallestDomain = slot; domainSize = size;
     }
   }
   return smallestDomain;
 }
-*/
+
+void order_domain_values(CSP *csp, int variable) {
+  for (int i = 0; i < NUM_VALUES - 1; i++) {
+    for (int j = 0; j < NUM_VALUES - i - 1; j++) {
+      if (nconflicts(csp, variable, csp->curr_domains[variable][j]) > nconflicts(csp, variable, csp->curr_domains[variable][j + 1])) {
+	swap(&(csp->curr_domains[variable][j]), &(csp->curr_domains[variable][j + 1]));
+      }
+    }
+  }
+}
+
+void swap(int *a, int *b) {
+  int temp = *a;
+  *a = *b;
+  *b = temp;
+}
 
 void get_queue(CSP *csp, Queue *q, int variable) {
   // We want to find each variable-variable pair that is in the same row/column/box,

@@ -161,9 +161,6 @@ int main(int argc, char *argv[]) {
     printf("\n");
   }
 
-  return 0;
-
-  /*
   printf("  Showing initial board setup again...\n");
   board = initBoard(board, argv[1]);
   printf("\tTime to solve!\n\n");
@@ -182,5 +179,4 @@ int main(int argc, char *argv[]) {
 
 
   return 0;
-  */
 }

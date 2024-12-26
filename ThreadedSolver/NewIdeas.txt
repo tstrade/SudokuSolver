@@ -1,0 +1,73 @@
+    Clearly, 81 threads is not working (right now) - so how should the work load be distributed?
+
+	1. Getting the queue: each slot on the board is queued up with each one of its 20 neighbors ->
+	   enqueue() is called 1620 times right at the program start
+
+	2. The bulk of the work happens in the main while() loop of AC3() - runs until queue is empty,
+	   with several enqueues() as needed
+
+	   2a. revise() is called for every tuple dequeued - for each domain value x of y, revise loops through
+	       all domain values of z
+
+	   2b. count() is called for every tuple that is revised
+
+	   2c. if above conditions pass, the following checks are performed for each of the 81 slots, for
+	       every tuple
+
+    	   	 i. Check if x = y for y in [0:81]
+    		 ii. Check if x is a neighbor of y
+    		 iii. Check if (x,y) is already in the queue (by far the most expensive)
+
+	       If all three conditions pass, the tuple (x,y) is then enqueued, and the loop repeats for the
+	       next slot of 81 total
+
+    	       AFTER all 81 slots are checked for these 3 conditions, the while() loop finally moves onto
+	       the next tuple
+
+	 These might not seem bad at this scale, but Soduku boards can be larger, and must increase to the
+	 next perfect square (81, 100, 121, 144, etc.) which adds more domain value, more neighbors,
+	 and more slots --> bigger loops!
+
+
+    What should the protected variables be?
+
+	1. The AC3 queue - classic producers & consumers problem
+	   -> Obviously, reading is okay - enqueue() and dequeue() is the problem
+	   -> The queue size is not only limited, but we have to keep checking what is in the queue
+	   -> Checking this at the wrong time could result in duplicates in the queue
+
+
+	2. The domain values - AC3() reads these values to see if the domain is (incorrectly) empty
+	   -> It is more likely than not (at the beginning) that revise() will be "pruning" domain values
+	   -> The question is: is this actually a conflict? If anything, wouldn't AC3 catch the error
+	   -> sooner since an empty domain means something went wrong? I think so!
+
+
+    Hypothetical Control Path
+
+        1. Thread 1 starts queueing items - since this is a fixed number loop, it can complete this task
+	   and then terminate / be put to sleep / etc.
+
+	2. As soon as the first item is enqueued, Thread 2 can dequeue that item to be processed
+	   !*!*! DATA HAZARD !*!*! Thread 1 *must* wait to queue the next item until Thread 2 dequeues
+	   	 -> since several processing steps happen after a dequeue, Thread 1 will be able to
+		 -> enqueue faster than Thread 2 can dequeue
+
+	3. Thread 3 will process revise() - I don't think there's anyway to split this as it is fairly simple
+	   -> At this pointer however, Thread 2 will have dequeued the next item and is waiting for the
+	   -> result of revise() - it will dequeue either way, but obviously revise can't be called again
+	   -> until it finishes the first time
+	   -> HOWEVER - since the domain values must be protected, we must also execute count() after
+	   -> every revise() call, Thread 3 should execute count as well
+
+	4. The next processing step involves checking the 3 conditions previously listeed
+	   -> but none of these checks actually rely on the domain values
+	   -> as soon as the item is dequeued, we can start checking all conditions at the same time
+	   -> count() still must happen after revise(), but the other 3, especially checking
+	   -> if the new hypothetical tuple is in the queue already
+
+	   -> `pthread_kill()` will allow the threads to "reset" or respond to any of the conditions failing,
+	   -> resulting in the dequeuing of the next item
+	   -> if the conditions pass, the item gets enqueued -> Thread 1 one will wait to enqueue,
+	   -> Thread 2 will wait to dequeue (since it is a rolling list, the threads only must wait for the
+	   -> size and in-queue status to be updated

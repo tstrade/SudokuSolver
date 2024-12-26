@@ -67,7 +67,7 @@ Queue *initQueue(Queue *q) {
 }
 
 void enqueue(Queue *q, int Xi, int Xj) {
-  q->isInQueue[Xj][Xi] = 1;
+  q->isInQueue[Xi][Xj] = 1;
   q->currSize += 1;
 
   q->tuples[q->tail][0] = Xi;
@@ -80,7 +80,7 @@ void dequeue(Queue *q, int *item) {
   item[0] = q->tuples[q->head][0];
   item[1] = q->tuples[q->head][1];
 
-  q->isInQueue[item[1]][item[0]] = 0;
+  q->isInQueue[item[0]][item[1]] = 0;
 
   q->head = (q->head + 1) % q->maxSize;
   q->currSize -= 1;

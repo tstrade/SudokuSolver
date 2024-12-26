@@ -36,7 +36,7 @@ void *AC3(void *args) {
     if (revise(csp, Xi, Xj, knight) == 1) {
 
       // Hypothetically not a CS - thread will simply catch if AC3 has failed sooner than normal
-      if (count(csp->curr_domains[X[0]]) == 0) { fprintf(stderr, "AC3 Failed!\n"); exit(EXIT_FAILURE); }
+      if (count(csp->curr_domains[X[0]], NUM_VALUES) == 0) { fprintf(stderr, "AC3 Failed!\n"); exit(EXIT_FAILURE); }
 
       for (domain = 0; domain < NUM_SLOTS; domain++) {
 	// Don't enqueue a tuple consisting of the same variable ((0,0), (1,1), etc.)

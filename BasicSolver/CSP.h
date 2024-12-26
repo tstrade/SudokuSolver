@@ -20,7 +20,7 @@ void prune(CSP *self, int variable, int value);
 void infer_assignment(CSP *self);
 void restore(CSP *self);
 int Soduku_Constraint(int varA, int valA, int varB, int valB);
-int count(int *seq);
+int count(int *seq, int size);
 int getRow(int variable);
 int getCol(int variable);
 int isVariable(CSP *csp, int variable);

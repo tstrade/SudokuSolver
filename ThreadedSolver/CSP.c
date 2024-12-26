@@ -194,7 +194,7 @@ void display(CSP *self) {
 
 int **actions(CSP *self) {
   // All assignments have been made - no actions to be taken
-  if (count(self->assignment) == NUM_SLOTS) {
+  if (count(self->assignment, NUM_SLOTS) == NUM_SLOTS) {
     return NULL;
   }
   else { // Check for applicable actions and return list (might need to be a queue?)
@@ -225,17 +225,20 @@ int *result(CSP *self, int *action) {
 }
 
 int goal_test(CSP *self) {
-  int var;
+  int var, c, n;
 
   // If all variables haven't been assigned, the game is not complete
-  if (count(self->assignment) != NUM_SLOTS) { return 0; }
+  //printf("Testing solution... counting assignments...\n");
+  if ((c = count(self->assignment, NUM_SLOTS)) != NUM_SLOTS) { printf("Not all slots are assigned!\n"); return 0; }
 
   for (var = 0; var < NUM_SLOTS; var++) {
     // If any (Variable, Value) pair has a conflict, the game is not complete
-    if (nconflicts(self, var, self->assignment[var]) != 0) { return 0; }
+    if ((n = nconflicts(self, var, self->assignment[var])) != 0) { printf("Conflict with (%d, %d)!\n", var, self->assignment[var]); return 0; }
+    printf("There are %d conflicts with variable %d\n", n, var);
   }
 
   // Else, the game is complete!
+  printf("Somehow, the game is complete with %d assignments!\n", c);
   return 1;
 }
 
@@ -290,7 +293,7 @@ void infer_assignment(CSP *self) {
   for (i = 0; i < self->numVars; i++) {
     var = self->variables[i];
 
-    if (count(self->curr_domains[var]) == 1) {
+    if (count(self->curr_domains[var], NUM_VALUES) == 1) {
       for (val = 0; val < NUM_VALUES; val++) {
 	if (self->curr_domains[var][val] != 0) {
 	  self->assignment[var] = self->curr_domains[var][val];
@@ -322,9 +325,9 @@ int Soduku_Constraint(int varA, int valA, int varB, int valB) {
   return ((varA != varB) && (valA != valB));
 }
 
-int count(int *seq) {
+int count(int *seq, int size) {
   int count = 0;
-  for (int i = 0; i < NUM_VALUES; i++) {
+  for (int i = 0; i < size; i++) {
     if (seq[i] != 0) { count++; }
   } // End values loop
   return count;
@@ -340,8 +343,8 @@ int getCol(int variable) {
 
 int isVariable(CSP *csp, int variable) {
   int slot;
-  for (slot = 0; slot < NUM_VALUES; slot++) {
-    if (csp->assignment[variable] == 0) { return 1; }
+  for (slot = 0; slot < csp->numVars; slot++) {
+    if (csp->variables[slot] == variable) { return 1; }
   }
   return 0;
 }
