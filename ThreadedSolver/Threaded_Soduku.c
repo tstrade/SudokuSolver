@@ -145,15 +145,33 @@ int main(int argc, char *argv[]) {
   //void *status;
   clock_t start, end;
 
+  HOA *inspector;
+  Revisors *worker;
+
   printf("\tTime to solve!\n\n");
-  printf("  Starting the solve with AC3 procedure with %d threads...\n", NUM_SLOTS);
+  printf("  Starting the AC3 procedure...\n");
   start = clock();
 
   pthread_create(&(args->parent_thread), NULL, fetchQueue, args);
+  pthread_create(&(args->finish_thread), NULL, editQueue, args);
+
+  for (int slot = 0; slot < NUM_SLOTS; slot++) {
+    inspector = args->inspectors[slot]; inspector->value = slot;
+    pthread_create(&(inspector->thread), NULL, inspect, (void *)inspector);
+    pthread_mutex_unlock(&(args->qLock));
+  }
+
+  for (int value = 0; value < NUM_VALUES; value++) {
+    worker = args->workers[value]; worker->value = value;
+    pthread_create(&(worker->thread), NULL, revise, worker);
+  }
+
+  printf("    Waiting for threads to finish...\n");
   pthread_join(args->finish_thread, NULL);
 
   end = clock();
   infer_assignment(board);
+
   printf("\tAC3 solved the board in %f seconds.\n\n", difftime(end, start) / CLOCKS_PER_SEC);
   display(board);
 
