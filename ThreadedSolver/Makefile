@@ -1,4 +1,4 @@
-DEPS := Threaded_Soduku.c Threaded_Soduku.h CSP.c CSP.h Threaded_Solver.c Threaded_Solver.h datastructs.c datastructs.h
+DEPS := Threaded_Soduku.c Threaded_Soduku.h CSP.c CSP.h AC3_Split.c AC3_Split.h queue.c queue.h
 CC := gcc
 CFLAGS := -g -Wall -Werror -std=gnu99 -pthread
 

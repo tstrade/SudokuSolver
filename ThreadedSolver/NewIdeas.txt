@@ -71,3 +71,17 @@
 	   -> if the conditions pass, the item gets enqueued -> Thread 1 one will wait to enqueue,
 	   -> Thread 2 will wait to dequeue (since it is a rolling list, the threads only must wait for the
 	   -> size and in-queue status to be updated
+
+
+
+  Implmented control path
+
+  |         T1          |          T2          |          T3         |       T4
+  ---------------------------------------------------------------------------------
+  | LOCK-ENQUEUE-CT2EDT |         N/A          |         N/A         |      N/A
+  .................................................................................
+  | CT3INSP-UNLOCK-LOCK | CT4REV-WAIT_LOCK_DQ  | Waiting on WAITINSP | Waiting on R
+  .................................................................................
+  | UNLOCK-START_SCANQ  | LOCK-DQ-SIGREV-UNLCK |         N/A         | REV-SIG END
+  .................................................................................
+  | WAIT_ENDREV-BDCINSP |

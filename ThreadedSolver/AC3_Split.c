@@ -1,12 +1,14 @@
 #include "AC3_Split.h"
+#include "AC3_structs.h"
 
 #include <pthread.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <semaphore.h>
 
-#include "CSP.c"
-#include "queue.c"
+//#include "CSP.c"
+//#include "queue.c"
+#include "AC3_structs.c"
 
 #ifndef NUM_SLOTS
 #define NUM_SLOTS 81
@@ -20,60 +22,20 @@
 #define NUM_VALUES 9
 #endif
 
-struct AC3 {
-  CSP *csp;           // Standard AC3 info to be
-  Queue *q;           // shared between threads
-  int *tuple;         //
-  int slot, neighbor; //
-
-  pthread_mutex_t *qLock;       // Control read & write of the queue
-  pthread_cond_t *scanning;
-
-  Revisors **workers;
-  pthread_mutex_t *revising;
-  pthread_cond_t *StartRevise;
-  int revised;
-
-  HOA **inspectors;
-  pthread_mutex_t *inspecting;
-  pthread_cond_t *StartInspecting;
-
-  int restart;
-};
-
-struct Revisors {
-  AC3 *top_level;
-  pthread_t thread;
-  pthread_mutex_t *WaitRevise;
-  pthread_cond_t *EndRevise;
-  int value, satisfied;
-};
-
-struct HOA {
-  AC3 *top_level;
-  pthread_t thread;
-  pthread_mutex_t *WaitInspect;
-  pthread_cond_t *EndInspect;
-  int value;
-};
-
-
-
 void *fetchQueue(void *arg) {
   AC3 *fetched = (AC3 *)arg;
   int thread_dispatched = 0;
-  pthread_t thread;
   HOA *inspector;
 
   for (int slot = 0; slot < NUM_SLOTS; slot++) {
-    pthread_mutex_lock(fetched->qLock);
+    pthread_mutex_lock(&(fetched->qLock));
     for (int n = 0; n < NUM_NEIGHBORS; n++) {
       enqueue(fetched->q, fetched->csp->neighbors[slot][n], slot);
-      if (!thread_dispatched) { pthread_create(&thread, NULL, editQueue, arg); thread_dispatched = 1; }
+      if (!thread_dispatched) { pthread_create(&(fetched->finish_thread), NULL, editQueue, arg); thread_dispatched = 1; }
     }
     inspector = fetched->inspectors[slot]; inspector->value = slot;
     pthread_create(&(inspector->thread), NULL, inspect, (void *)inspector);
-    pthread_mutex_unlock(fetched->qLock);
+    pthread_mutex_unlock(&(fetched->qLock));
   }
 
   scanQueue(arg);
@@ -92,21 +54,34 @@ void *editQueue(void *arg) {
 
 
   while (fetched->q->currSize != 0) {
-    pthread_mutex_lock(fetched->qLock); // Lock queue from read/write
+    pthread_mutex_lock(&(fetched->qLock)); // Lock queue from read/write
 
     dequeue(fetched->q, fetched->tuple); // dequeue
-    pthread_cond_broadcast(fetched->StartRevise); // let revisions begin
-    pthread_mutex_unlock(fetched->qLock); // Unlock queue to read/write
+    pthread_cond_broadcast(&(fetched->StartRevise)); // let revisions begin
+    pthread_mutex_unlock(&(fetched->qLock)); // Unlock queue to read/write
 
 
-    pthread_mutex_lock(fetched->inspecting); // Wait for other threads to evaluate conditions
+    pthread_mutex_lock(&(fetched->inspecting)); // Wait for other threads to evaluate conditions
     for (int i = 0; i < NUM_SLOTS; i++) {
-      pthread_cond_wait((fetched->inspectors[i])->EndInspect, fetched->inspecting);
+      pthread_cond_wait((&(fetched->inspectors[i])->EndInspect), &(fetched->inspecting));
     }
-    pthread_mutex_unlock(fetched->inspecting);
+
+    pthread_mutex_unlock(&(fetched->inspecting));
   }
 
+  /*
+  for (int i = 0; i < NUM_VALUES; i++) {
+    pthread_cancel((fetched->workers[i])->thread);
+  }
 
+  for (int j = 0; j < NUM_SLOTS; j++) {
+    pthread_cancel((fetched->inspectors[j])->thread);
+  }
+
+  pthread_cancel(fetched->parent_thread);
+  */
+
+  fetched->completed = 1;
   pthread_exit(NULL);
 }
 
@@ -114,19 +89,19 @@ void *scanQueue(void *arg) {
   AC3 *fetched = (AC3 *)arg;
   int i;
 
-  while (1) {
-    pthread_mutex_lock(fetched->revising);
+  while (!fetched->completed) {
+    pthread_mutex_lock(&(fetched->revising));
 
     for (i = 0; i < NUM_VALUES; i++) {
-      pthread_cond_wait((fetched->workers[i])->EndRevise, fetched->revising);
+      pthread_cond_wait((&(fetched->workers[i])->EndRevise), &(fetched->revising));
     }
 
     if (count(fetched->csp->curr_domains[fetched->tuple[0]], NUM_VALUES) == 0) {
       fprintf(stderr, "  Found empty domain!\n"); exit(EXIT_FAILURE); }
 
-    pthread_cond_broadcast(fetched->StartInspecting);
+    pthread_cond_broadcast(&(fetched->StartInspecting));
 
-    pthread_mutex_unlock(fetched->revising);
+    pthread_mutex_unlock(&(fetched->revising));
   }
 
   pthread_exit(NULL);
@@ -137,9 +112,9 @@ void *revise(void *arg) {
   CSP *csp = worker->top_level->csp;
   int Xi, Xj, XiValue, XjValue, domainValXj;
 
-  while (1) { // This concurrent reading/writing of the domains is going to be the problem
-    pthread_mutex_lock(worker->WaitRevise);
-    pthread_cond_wait(worker->top_level->StartRevise, worker->WaitRevise);
+  while (!worker->top_level->completed) {
+    pthread_mutex_lock(&(worker->WaitRevise));
+    pthread_cond_wait(&(worker->top_level->StartRevise), &(worker->WaitRevise));
 
     worker->satisfied = 0;
     Xi = worker->top_level->tuple[0], Xj = worker->top_level->tuple[1];
@@ -155,16 +130,20 @@ void *revise(void *arg) {
     } // End Xj domain loop
 
     if (!worker->satisfied) { prune(csp, Xi, XiValue); worker->top_level->revised = 1; }
-    pthread_cond_signal(worker->EndRevise);
-    pthread_mutex_unlock(worker->WaitRevise);
+    pthread_cond_broadcast(&(worker->EndRevise));
+    pthread_mutex_unlock(&(worker->WaitRevise));
   }
+
+  pthread_exit(NULL);
 }
 
 void *inspect(void *arg) {
   HOA *inspector = (HOA *)arg;
-  while (1) {
-    pthread_mutex_lock(inspector->WaitInspect);
-    pthread_cond_wait(inspector->top_level->StartInspecting, inspector->WaitInspect);
+  Tuple *head;
+
+  while (!inspector->top_level->completed) {
+    pthread_mutex_lock(&(inspector->WaitInspect));
+    pthread_cond_wait(&(inspector->top_level->StartInspecting), &(inspector->WaitInspect));
 
     if (inspector->value == inspector->top_level->tuple[1]) {
       goto not_valid;
@@ -178,24 +157,20 @@ void *inspect(void *arg) {
     goto not_valid;
 
   is_neighbor:
-    Tuple *head = inspector->top_level->q->head;
+    head = inspector->top_level->q->head;
     while (head) {
       if (head->Xi == inspector->value && head->Xj == inspector->top_level->tuple[0]) { goto not_valid; }
       head = head->next;
     }
 
-    pthread_mutex_lock(inspector->top_level->qLock);
+    pthread_mutex_lock(&(inspector->top_level->qLock));
     enqueue(inspector->top_level->q, inspector->value, inspector->top_level->tuple[0]);
-    pthread_mutex_unlock(inspector->top_level->qLock);
+    pthread_mutex_unlock(&(inspector->top_level->qLock));
 
   not_valid:
-    pthread_cond_signal(inspector->EndInspect);
-    pthread_mutex_unlock(inspector->WaitInspect);
+    pthread_cond_signal(&(inspector->EndInspect));
+    pthread_mutex_unlock(&(inspector->WaitInspect));
   }
-  pthread_exit(NULL);
-}
 
-void cancel(int sig) {
-  fprintf(stderr, "Received SIG %d: Found empty domain in the queue!\n", sig);
-  exit(EXIT_FAILURE);
+  pthread_exit(NULL);
 }

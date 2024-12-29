@@ -1,7 +1,7 @@
-#include "Threaded_Solver.h"
+#include "AC3_Split.h"
 #include "CSP.h"
-#include "datastructs.h"
-#include "Threaded_Solver.c"
+#include "queue.h"
+#include "AC3_Split.c"
 #include "Threaded_Soduku.h"
 
 #include <pthread.h>
@@ -14,7 +14,7 @@
 #define ASCII_9 57
 #define ASCII_0 48
 
-pthread_t threads[NUM_SLOTS];
+pthread_t parent_thread, finish_thread;
 
 CSP *initBoard(CSP *board, char *initialPositions) {
   board = initCSP(board);
@@ -130,40 +130,35 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
+  Queue *q = NULL;
+  q = initQueue();
+
   CSP *board = NULL;
   printf("  Showing initial board setup...\n");
   board = initBoard(board, argv[1]);
 
-  // initialize protections
-  protector *knight = initProtector();
+
   // initialize args for AC3
-  AC3_args *args = initAC3Args(board, knight);
-  args->slot = 0;
-  // initialize threads
-  int t;
-  void *status;
+  AC3 *args = NULL;
+  args = initAC3(board, q, &parent_thread, &finish_thread);
+
+  //void *status;
   clock_t start, end;
 
   printf("\tTime to solve!\n\n");
   printf("  Starting the solve with AC3 procedure with %d threads...\n", NUM_SLOTS);
   start = clock();
 
-  for (t = 0; t < NUM_SLOTS; t++) {
-    pthread_create(&threads[t], &knight->attr, AC3, (void *)args);
-  }
-
-  for (t = 0; t < NUM_SLOTS; t++) {
-    pthread_join(threads[t], &status);
-  }
+  pthread_create(&(args->parent_thread), NULL, fetchQueue, args);
+  pthread_join(args->finish_thread, NULL);
 
   end = clock();
-
   infer_assignment(board);
   printf("\tAC3 solved the board in %f seconds.\n\n", difftime(end, start) / CLOCKS_PER_SEC);
   display(board);
 
   printf("  Freeing memory for the board...\n");
-  destroyAC3Args(args);
+  destroyAC3(args);
   printf("\tBoard successfully freed!\n");
 
   pthread_exit(NULL);
