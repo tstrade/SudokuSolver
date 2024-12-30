@@ -29,6 +29,7 @@ struct AC3 {
 
   int restart;
   int completed;
+  int fetching;
 };
 
 struct Revisors {
@@ -47,41 +48,70 @@ struct HOA {
   int value;
 };
 
+void check_failure(void *ptr) {
+  if (ptr == NULL) {
+    fprintf(stderr, "Allocation failed initializing the AC3 struct.\n");
+    exit(EXIT_FAILURE);
+  }
+}
+
 
 /* -------------------------------------- INITIALIZERS -------------------------------------- */
 
 AC3 *initAC3(CSP *csp, Queue *q, pthread_t *parent, pthread_t *finish) {
   AC3 *a = malloc(sizeof(AC3));
+  check_failure((void *)a);
+
   a->csp = csp;
   a->q = q;
+
   a->tuple = calloc(2, sizeof(int));
+  check_failure((void *)a->tuple);
+
   a->slot = 0, a->neighbor = 0;
 
   a->parent_thread = *parent;
   a->finish_thread = *finish;
 
   pthread_mutex_init(&a->qLock, NULL);
-  pthread_cond_init(&a->scanning, NULL);
+  check_failure((void *)(&a->qLock));
 
-  a->workers = malloc(sizeof(Revisors));
+  pthread_cond_init(&a->scanning, NULL);
+  check_failure((void *)(&a->scanning));
+
+  a->workers = malloc(NUM_VALUES * sizeof(Revisors));
+  check_failure((void *)a->workers);
+
   for (int i = 0; i < NUM_VALUES; i++) {
     a->workers[i] = initRevisors(a);
+    check_failure((void *)a->workers[i]);
   }
 
   pthread_mutex_init(&a->revising, NULL);
+  check_failure((void *)(&a->revising));
+
   pthread_cond_init(&a->StartRevise, NULL);
+  check_failure((void *)(&a->StartRevise));
+
   a->revised = 0;
 
-  a->inspectors = malloc(sizeof(HOA));
+  a->inspectors = malloc(NUM_SLOTS * sizeof(HOA));
+  check_failure((void *)a->inspectors);
+
   for (int j = 0; j < NUM_SLOTS; j++) {
     a->inspectors[j] = initHOA(a);
+    check_failure((void *)a->inspectors[j]);
   }
 
   pthread_mutex_init(&a->inspecting, NULL);
+  check_failure((void *)(&a->inspecting));
+
   pthread_cond_init(&a->StartInspecting, NULL);
+  check_failure((void *)(&a->StartInspecting));
 
   a->restart = 0;
   a->completed = 0;
+  a->fetching = 0;
 
   return a;
 }
