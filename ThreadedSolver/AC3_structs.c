@@ -29,12 +29,13 @@ struct AC3 {
 
   int restart;
   int completed;
-  int fetching;
+  pthread_cond_t fetched;
 };
 
 struct Revisors {
   AC3 *top_level;
   pthread_t thread;
+  pthread_mutex_t WaitFetch;
   pthread_mutex_t WaitRevise;
   pthread_cond_t EndRevise;
   int value, satisfied;
@@ -43,6 +44,7 @@ struct Revisors {
 struct HOA {
   AC3 *top_level;
   pthread_t thread;
+  pthread_mutex_t WaitFetch;
   pthread_mutex_t WaitInspect;
   pthread_cond_t EndInspect;
   int value;
@@ -111,7 +113,9 @@ AC3 *initAC3(CSP *csp, Queue *q, pthread_t *parent, pthread_t *finish) {
 
   a->restart = 0;
   a->completed = 0;
-  a->fetching = 0;
+
+  pthread_cond_init(&a->fetched, NULL);
+  check_failure((void *)(&a->fetched));
 
   return a;
 }
@@ -120,6 +124,7 @@ Revisors *initRevisors(AC3 *top_level) {
   Revisors *r = malloc(sizeof(Revisors));
   r->top_level = top_level;
 
+  pthread_mutex_init(&r->WaitFetch, NULL);
   pthread_mutex_init(&r->WaitRevise, NULL);
   pthread_cond_init(&r->EndRevise, NULL);
 
@@ -131,6 +136,7 @@ HOA *initHOA(AC3 *top_level) {
   HOA *h = malloc(sizeof(HOA));
   h->top_level = top_level;
 
+  pthread_mutex_init(&h->WaitFetch, NULL);
   pthread_mutex_init(&h->WaitInspect, NULL);
   pthread_cond_init(&h->EndInspect, NULL);
 
@@ -144,6 +150,7 @@ void destroyAC3(AC3 *solver) {
   pthread_cond_destroy(&(solver->StartInspecting));
   pthread_cond_destroy(&(solver->StartRevise));
   pthread_cond_destroy(&(solver->scanning));
+  pthread_cond_destroy(&(solver->fetched));
 
   pthread_mutex_destroy(&(solver->inspecting));
   pthread_mutex_destroy(&(solver->revising));
@@ -164,6 +171,7 @@ void destroyAC3(AC3 *solver) {
 }
 
 void destroyRevisors(Revisors *worker) {
+  pthread_mutex_destroy(&(worker->WaitFetch));
   pthread_mutex_destroy(&(worker->WaitRevise));
   pthread_cond_destroy(&(worker->EndRevise));
   free(worker);
@@ -171,6 +179,7 @@ void destroyRevisors(Revisors *worker) {
 }
 
 void destroyHOA(HOA *inspector) {
+  pthread_mutex_destroy(&(inspector->WaitFetch));
   pthread_mutex_destroy(&(inspector->WaitInspect));
   pthread_cond_destroy(&(inspector->EndInspect));
   free(inspector);

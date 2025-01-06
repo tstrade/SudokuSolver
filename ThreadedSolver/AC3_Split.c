@@ -28,13 +28,14 @@ void *fetchQueue(void *arg) { // ...............................................
   AC3 *fetched = (AC3 *)arg;
 
   for (int slot = 0; slot < NUM_SLOTS; slot++) {
-    pthread_mutex_lock(&(fetched->qLock)); // .......................Locking qLock (AC3)
+    //pthread_mutex_lock(&(fetched->qLock)); // .......................Locking qLock (AC3)
     for (int n = 0; n < NUM_NEIGHBORS; n++) {
       enqueue(fetched->q, fetched->csp->neighbors[slot][n], slot);
     }
-    fetched->fetching = 1;
-    pthread_mutex_unlock(&(fetched->qLock)); // ...................Unlocking qLock (AC3)
+    //pthread_mutex_unlock(&(fetched->qLock)); // ...................Unlocking qLock (AC3)
   }
+
+  pthread_cond_broadcast(&fetched->fetched);
 
   scanQueue(fetched);
 
@@ -49,7 +50,10 @@ void *fetchQueue(void *arg) { // ...............................................
 void *editQueue(void *arg) { // .......................................................................................................................Start editing queue
   AC3 *fetched = (AC3 *)arg;
 
-  while (fetched->fetching == 0);
+  pthread_mutex_lock(&(fetched->inspecting));
+  pthread_cond_wait(&(fetched->fetched), &(fetched->inspecting));
+  pthread_mutex_unlock(&(fetched->inspecting));
+
   while (fetched->q->currSize != 0) { // .....................................................................................Starting while loop
 
     pthread_mutex_lock(&(fetched->qLock)); // ......................................Locking qLock (AC3)
@@ -72,7 +76,7 @@ void *editQueue(void *arg) { // ................................................
   } // ........................................................................................................................Ending while loop
 
   fetched->completed = 1;
-
+  printf("Edit queue is finished.\n");
   pthread_exit(NULL);
 
 } // ...................................................................................................................................................End editing queue
@@ -85,7 +89,6 @@ void *scanQueue(void *arg) { // ................................................
   AC3 *fetched = (AC3 *)arg;
   int i;
 
-  while (fetched->fetching == 0);
   while (!fetched->completed) { // ...........................................................................................Starting while loop
 
     pthread_mutex_lock(&(fetched->revising)); // ....................................................Locking revising (AC3)
@@ -116,7 +119,10 @@ void *revise(void *arg) { // ...................................................
   CSP *csp = worker->top_level->csp;
   int Xi, Xj, XiValue, XjValue, domainValXj;
 
-  while (worker->top_level->fetching == 0);
+  pthread_mutex_lock(&worker->WaitFetch);
+  pthread_cond_wait(&worker->top_level->fetched, &worker->WaitFetch);
+  pthread_mutex_unlock(&worker->WaitFetch);
+
   while (!worker->top_level->completed) { // ...............................................................................Starting while loop
 
     pthread_mutex_lock(&(worker->WaitRevise)); // .................................................Locking WaitRevise (Revisors)
@@ -156,7 +162,10 @@ void *inspect(void *arg) { // ..................................................
   HOA *inspector = (HOA *)arg;
   Tuple *head;
 
-  while (inspector->top_level->fetching == 0);
+  pthread_mutex_lock(&inspector->WaitFetch);
+  pthread_cond_wait(&inspector->top_level->fetched, &inspector->WaitFetch);
+  pthread_mutex_unlock(&inspector->WaitFetch);
+
   while (!inspector->top_level->completed) { // ...........................................................................Starting while loop
 
     pthread_mutex_lock(&(inspector->WaitInspect)); // .............................................Locking WaitInspect (HOA)

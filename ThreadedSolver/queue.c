@@ -1,68 +1,34 @@
 #include "queue.h"
 
-#include <stdlib.h>
+struct qentry queue[NUM_SLOTS * NUM_NEIGHBORS];
 
-struct Queue {
-  int currSize;
-  Tuple *head;
-  Tuple *tail;
-};
+int initQueue() {
+  int slot, neighbor;
+  for (slot = 0; slot < NUM_SLOTS; slot++)
+    for (neighbor = 0; neighbor < NUM_NEIGHBORS; neighbor++)
+      if (enqueue(slot, neighbors[slot][neighbor]) == FAILURE)
+        return FAILURE;
 
-
-struct Tuple {
-  int Xi, Xj;
-  Tuple *next;
-};
-
-Queue *initQueue() {
-  Queue *q = malloc(sizeof(Queue));
-  if (q == NULL) { exit(EXIT_FAILURE); }
-
-  q->currSize = 0;
-  q->head = malloc(sizeof(Tuple));
-  q->tail = q->head;
-  return q;
+  return SUCCESS;
 }
 
-void enqueue(Queue *q, int Xi, int Xj) {
-  if (q->currSize == 0) {
-    q->head->Xi = Xi, q->head->Xj = Xj;
-    q->currSize++;
-    return;
-  }
+int enqueue(ushort i, ushort j) {
+  ushort old_tail;
+  uint qdata;
 
-  Tuple *new = malloc(sizeof(Tuple));
-  if (new == NULL) { EXIT; }
+  if (i == j)
+    return FAILURE;
 
-  new->Xi = Xi;
-  new->Xj = Xj;
+  old_tail = QTAIL();
+  qdata = (i << 16);
+  qdata |= j;
 
-  q->tail->next = new;
-  q->tail = new;
+  queue[old_tail].qdata = qdata;
 
-  q->currSize++;
+
+  return SUCCESS;
 }
 
-void dequeue(Queue *q, int *tuple) {
-  tuple[0] = q->head->Xi;
-  tuple[1] = q->head->Xj;
-
-  Tuple *temp = q->head;
-  q->head = q->head->next;
-  q->currSize--;
-  free(temp);
-}
-
-void destroyQueue(Queue *q) {
-  if (q->head) {
-    Tuple *temp;
-    while (q->head) {
-      temp = q->head;
-      q->head = q->head->next;
-      free(temp);
-    }
-  }
-
-  free(q);
-  q = NULL;
+qid dequeue() {
+  return (qid)SUCCESS;
 }
