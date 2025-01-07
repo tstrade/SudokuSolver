@@ -11,6 +11,7 @@
 typedef unsigned long ulong;
 typedef unsigned int uint;
 typedef unsigned short ushort;
+typedef int32_t status;
 
 
 /* ----- Macros ----- */
@@ -25,25 +26,6 @@ typedef unsigned short ushort;
 
 /* ----- Inline Functions ----- */
 #define EXIT exit(EXIT_FAILURE);
-
-
-/* ----- CSP Structure, Inlines, and Globals ----- */
-struct CSP {
-  ushort nassigns;
-  ushort domains[NUM_SLOTS][NUM_VALUES];
-  ushort variables[];
-};
-
-extern struct CSP csp;
-extern ushort neighbors[NUM_SLOTS][NUM_NEIGHBORS];
-extern ushort assignments[NUM_SLOTS];
-
-int initCSP();
-int initBoard(char *initialPositions);
-#define constraint(a, b) (a != b)
-
-
-
 
 typedef struct AC3 AC3;
 typedef struct Revisors Revisors;
@@ -65,22 +47,6 @@ void destroyRevisors(Revisors *worker);
 void destroyHOA(HOA *inspector);
 
 
-/* ----- Constraint Satisfaction Functions ----- */
-int initNeighbors();
-int assign(int variable, int value);
-int unassign(int variable);
-int nconflicts(int variable, int value);
-void display();
-
-int support_pruning();
-int suppose(int variable, int value);
-int prune(int variable, int value);
-int infer_assignment();
-int count(int *seq, int size);
-int get_row(int variable);
-int get_col(int variable);
-int is_var(int variable);
-
 /* ----- Payload Functions to Execute the AC3 Algorithm ----- */
 void *editQueue(void *arg);
 void *scanQueue(void *arg);
@@ -89,11 +55,6 @@ void *revise(void *arg);
 void *inspect(void *arg);
 
 
-/* ----- Suplementary / Debugging Functions ----- */
-void showVars();
-void showCurrentDomains();
-void showVariableDomain(int variable);
-void showRemovals();
 void destroySoduku();
 
 
