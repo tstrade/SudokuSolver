@@ -1,27 +1,24 @@
 #include "queue.h"
 
-ushort Xi = 0;
-ushort Xj = 0;
-
 status dequeue()
 {
-  ushort oldhead, newhead;
+  qid16 oldhead, newhead;
 
-  if (QSIZE() == 0)
+  if (QSIZE == 0)
     return EMPTY;
 
   /* Obtain the index of the new queue head */
-  oldhead = QHEAD();
+  oldhead = QHEAD;
   newhead = queue[oldhead].qnext;
 
   /* Collect the data and store in the globals Xi, Xj */
-  Xi = (((queue[oldhead].qdata) >> 8) & TMASK);
-  Xj = ((queue[oldhead].qdata) & TMASK);
+  Xi = queue[oldhead].xi;
+  Xj = queue[oldhead].xj;
 
   /* Update queue and table of present tuples */
-  qhead = newhead;
-  qsize--;
-  in_q[Xi] &= (~QMSK(Xj));
+  SETHEAD(newhead);
+  DECSIZE;
+  in_q[Xi] &= (~QMSK(Xi, Xj));
 
   return SUCCESS;
 }

@@ -1,7 +1,7 @@
 #ifndef QUEUE_H
 #define QUEUE_H
 
-#include "../soduku_threads.h"
+#include "../sudoku_threads.h"
 #include "../CSP/CSP.h"
 
 #define EMPTY      0
@@ -22,14 +22,15 @@ extern uint32_t in_q[];
 extern uint8_t Xi, Xj;
 extern qid16 qhead, qsize, qtail;
 
-#define QSIZE()    (qsize)
-#define INCSIZE()  (qsize++)
-#define DECSIZE()  (qsize--)
+#define QSIZE      (qsize)
+#define QEMPTY     (qsize == 0)
+#define INCSIZE    (qsize++)
+#define DECSIZE    (qsize--)
 
-#define QHEAD()    (qhead)
+#define QHEAD      (qhead)
 #define SETHEAD(x) (qhead = (x))
 
-#define QTAIL()    (qtail)
+#define QTAIL      (qtail)
 #define SETTAIL(x) (qtail = (x))
 
 /* ----- Queue Operations ----- */

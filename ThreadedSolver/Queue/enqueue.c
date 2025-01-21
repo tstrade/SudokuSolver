@@ -10,7 +10,7 @@ status enqueue(uint8_t i, uint8_t j)
 
   /* Get index for the new tail of the queue */
   maxsize = NUM_SLOTS * NUM_NEIGHBORS;
-  oldtail = QTAIL();
+  oldtail = QTAIL;
   newtail = ((oldtail + 1) % maxsize);
 
   /* Store data in current tail and update queue */
@@ -18,10 +18,10 @@ status enqueue(uint8_t i, uint8_t j)
   queue[oldtail].xj = j;
   queue[oldtail].qnext = newtail;
 
-  INCSIZE();
+  INCSIZE;
   SETTAIL(newtail);
 
-  in_q[i] |= (1 << j);
+  in_q[i] |= QMSK(i, j);
 
   return SUCCESS;
 }

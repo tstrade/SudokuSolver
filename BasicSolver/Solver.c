@@ -22,28 +22,27 @@ int AC3(Queue *q, CSP *csp) {
     // Check for constraint violations between first pair of neighbors
     if (revise(csp, Xi, Xj) == 1) {
       if (count(csp->curr_domains[Xi], NUM_VALUES) == 0) {
-	printf("Found empty domain for variable %d with %d items left in queue!\n", Xi, q->currSize);
-	return 0;
+	      printf("Found empty domain for variable %d with %d items left in queue!\n", Xi, q->currSize);
+	      return 0;
       }
 
       for (domain = 0; domain < NUM_SLOTS; domain++) {
-	// Don't enqueue a tuple consisting of the same variable ((0,0), (1,1), etc.)
-	if (domain == Xj) { continue; }
+        // Don't enqueue a tuple consisting of the same variable ((0,0), (1,1), etc.)
+        if (domain == Xj) { continue; }
 
-	// Don't enqueue a tuple consisting of non-neighboring variables (constraint doesn't apply)
-	nIndex = 0;
+        // Don't enqueue a tuple consisting of non-neighboring variables (constraint doesn't apply)
+        nIndex = 0;
         while (nIndex != NUM_NEIGHBORS) {
-	  if (Xi == csp->neighbors[domain][nIndex]) { goto is_neighbor; }
-	  nIndex++;
-	}
+          if (Xi == csp->neighbors[domain][nIndex]) { goto is_neighbor; }
+          nIndex++;
+        }
         continue;
 
-      is_neighbor:
-	// Don't enqueue the tuple exists in the queue already
+        is_neighbor:
+        // Don't enqueue the tuple exists in the queue already
         if (q->isInQueue[domain][Xi] == 1) { continue; }
 
-	enqueue(q, domain, Xi);
-
+        enqueue(q, domain, Xi);
       } // End for loop
     } // End revise
   } // End while

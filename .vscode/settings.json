@@ -58,6 +58,10 @@
   "C_Cpp_Runner.msvcSecureNoWarnings": false,
   "files.associations": {
     "csp.h": "c",
-    "queue.h": "c"
+    "queue.h": "c",
+    "semaphore.h": "c",
+    "ac3_split.h": "c",
+    "sudoku_threads.h": "c",
+    "ac3.h": "c"
   }
 }
