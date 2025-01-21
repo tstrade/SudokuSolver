@@ -11,12 +11,11 @@
 /* ----- Types ----- */
 typedef int32_t status;
 
-
 /* ----- Macros ----- */
-#define SUCCESS 1
-#define FAILURE 0
-#define TRUE    1
-#define FALSE   0
+#define SUCCESS  1
+#define FAILURE -1
+#define TRUE     1
+#define FALSE    0
 
 #define NUM_VALUES 9
 #define NUM_SLOTS (NUM_VALUES * NUM_VALUES)
@@ -25,7 +24,7 @@ typedef int32_t status;
 
 
 /* ----- Inline Functions ----- */
-#define EXIT exit(EXIT_FAILURE);
+#define EXIT (exit(EXIT_FAILURE))
 
 typedef struct AC3 AC3;
 typedef struct Revisors Revisors;
@@ -33,12 +32,9 @@ typedef struct HOA HOA;
 
 
 /* ----- Initializing Structures Functions ----- */
-
-int initQueue();
-
-int initAC3(pthread_t *parent, pthread_t *finish);
-int initRevisors();
-int initHOA();
+status initAC3(pthread_t *parent, pthread_t *finish);
+status initRevisors();
+status initHOA();
 
 
 /* ----- Terminating Mutexes, etc. ----- */

@@ -31,6 +31,7 @@ void unassign(uint8_t variable);
 uint8_t nconflicts(uint8_t variable, uint8_t value);
 uint8_t count(uint8_t *seq, uint8_t size);
 status is_var(uint8_t variable);
+uint8_t neighbor_idx(uint8_t variable, uint8_t nbr);
 
 void support_pruning();
 void prune(uint8_t variable, uint8_t value);

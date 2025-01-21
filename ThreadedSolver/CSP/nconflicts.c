@@ -29,3 +29,12 @@ status is_var(uint8_t variable)
     }
     return NTVAR;
 }
+
+uint8_t neighbor_idx(uint8_t variable, uint8_t nbr)
+{
+    for (uint8_t n_idx = 0; n_idx < NUM_NEIGHBORS; n_idx++) {
+        if (neighbors[variable][n_idx] == nbr)
+            return n_idx;
+    }
+    return (uint8_t)FAILURE;
+}

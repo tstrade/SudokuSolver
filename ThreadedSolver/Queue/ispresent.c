@@ -1,8 +1,8 @@
 #include "queue.h"
 
-status ispresent(ushort i, ushort j)
+status ispresent(uint8_t i, uint8_t j)
 {
-  if (in_q[i] & QMSK(j))
+  if (in_q[i] & QMSK(i, j))
     return PRSNT;
 
   return ABSNT;

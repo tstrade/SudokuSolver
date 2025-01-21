@@ -2,34 +2,40 @@
 #define QUEUE_H
 
 #include "../soduku_threads.h"
+#include "../CSP/CSP.h"
 
-#define TMASK 0x00FF
-#define EMPTY     -1
-#define PRSNT      2
-#define ABSNT      3
+#define EMPTY      0
+#define PRSNT      1
+#define ABSNT      2
 
-typedef int qid;
+typedef int qid16;
 
 struct qentry {
-  ushort qdata;
-  ushort qnext;
+  uint8_t xi, xj;
+  qid16 qnext;
 };
 
 extern struct qentry queue[];
-extern ushort Xi, Xj;
-extern qid qhead, qsize, qtail;
+extern uint32_t in_q[];
+#define QMSK(i, j) (1 << neighbor_idx((i), (j)))
 
-#define QSIZE() (qsize)
-#define QHEAD() (qhead)
-#define QTAIL() (qtail)
-#define QMSK(x) ((uint)1 << x)
+extern uint8_t Xi, Xj;
+extern qid16 qhead, qsize, qtail;
 
-extern uint in_q[];
+#define QSIZE()    (qsize)
+#define INCSIZE()  (qsize++)
+#define DECSIZE()  (qsize--)
+
+#define QHEAD()    (qhead)
+#define SETHEAD(x) (qhead = (x))
+
+#define QTAIL()    (qtail)
+#define SETTAIL(x) (qtail = (x))
 
 /* ----- Queue Operations ----- */
 status qinit();
-status enqueue(ushort i, ushort j);
+status enqueue(uint8_t i, uint8_t j);
 status dequeue();
-status ispresent(ushort i, ushort j);
+status is_present(uint8_t i, uint8_t j);
 
 #endif
