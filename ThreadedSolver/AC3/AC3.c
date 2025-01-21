@@ -30,12 +30,17 @@ void *qcontrol(void *arg)
       VER_VAL(&ver_val);
     } while (ver_val != NUM_NEIGHBORS);
   }
+  printf("\t\tAC3 solved the %dx%d Sudoku board in just %d seconds!\n", 
+    NUM_VALUES, NUM_VALUES, difftime(clock(), start));
+  
   finished = TRUE;
   R_BDCAST;
   V_BDCAST;
-  
+
   infer_assignment();
-  pthread_exit(NULL);
+  display();
+  
+  return NULL;
 }
 
 void *revise(void *arg)

@@ -10,6 +10,9 @@
 #include <unistd.h>
 #include <time.h>
 
+extern clock_t start;
+extern clock_t end;
+
 /* ----- Types ----- */
 typedef int32_t status;
 

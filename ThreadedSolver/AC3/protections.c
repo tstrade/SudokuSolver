@@ -9,7 +9,6 @@ struct verifier vtab[NUM_SLOTS];
 
 uint8_t finished = FALSE;
 uint8_t rflag = FALSE;
-uint8_t vflag = FALSE;
 
 status ac3init()
 {
@@ -21,7 +20,10 @@ status ac3init()
     retval |= pthread_cond_init(&vcond, NULL);
 
     retval |= sem_init(&revising, 0, NUM_VALUES);
-    retval |= sem_init(&verifying, 0, NUM_SLOTS);
+    retval |= sem_init(&verifying, 0, NUM_NEIGHBORS);
+
+    retval |= rinit();
+    retval |= vinit();
 
     return retval;
 }
@@ -37,6 +39,9 @@ status ac3free()
 
     retval |= sem_destroy(&revising);
     retval |= sem_destroy(&verifying);
+
+    retval |= rfree();
+    retval |= vfree();
 
     return retval;
 }

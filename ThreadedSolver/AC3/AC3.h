@@ -4,7 +4,6 @@
 #include "../sudoku_threads.h"
 
 extern pthread_t parent_thread;
-extern pthread_t final_thread;
 typedef uint8_t  tid8;
 
 /********************************************************************/
