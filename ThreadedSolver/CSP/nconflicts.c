@@ -1,0 +1,31 @@
+#include "CSP.h"
+
+uint8_t nconflicts(uint8_t variable, uint8_t value)
+{
+    uint8_t conflicts = 0;
+    for (uint8_t n_idx = 0; n_idx < NUM_NEIGHBORS; n_idx) {
+        uint8_t nbr = neighbors[variable][n_idx];
+        if (constraint(variable, value, nbr, assignments[nbr]) == 0)
+            conflicts++;
+    }
+    return conflicts;
+}
+
+uint8_t count(uint8_t *seq, uint8_t size)
+{
+    uint8_t cnt = 0;
+    for (uint8_t i = 0; i < size; i++) {
+        if (seq[i] != 0)
+            cnt++;
+    }
+    return cnt;
+}
+
+status is_var(uint8_t variable)
+{
+    for (uint8_t slot = 0; slot < csp.nvars; slot++) {
+        if (csp.variables[slot] == variable)
+            return ISVAR;
+    }
+    return NTVAR;
+}

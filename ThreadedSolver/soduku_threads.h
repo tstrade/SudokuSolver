@@ -6,17 +6,17 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <time.h>
+#include <stdint.h>
 
 /* ----- Types ----- */
-typedef unsigned long ulong;
-typedef unsigned int uint;
-typedef unsigned short ushort;
 typedef int32_t status;
 
 
 /* ----- Macros ----- */
 #define SUCCESS 1
 #define FAILURE 0
+#define TRUE    1
+#define FALSE   0
 
 #define NUM_VALUES 9
 #define NUM_SLOTS (NUM_VALUES * NUM_VALUES)

@@ -7,40 +7,42 @@
 #define NTVAR 0
 
 struct CSP {
-  ushort nassigns;
-  ushort domains[NUM_SLOTS][NUM_VALUES];
-  ushort variables[];
+  uint8_t nassigns, nvars;
+  uint8_t domains[NUM_SLOTS][NUM_VALUES];
+  uint8_t *variables;
 };
 
 extern struct CSP csp;
-extern ushort neighbors[NUM_SLOTS][NUM_NEIGHBORS];
-extern ushort assignments[NUM_SLOTS];
-
+extern uint8_t *neighbors[];
+extern uint8_t assignments[];
 
 #define constraint(A, a, B, b) ((A != B) && (a != b))
 
+#define ASCII_0 48
+#define ASCII_9 57
+
 status binit(char *initialPositions);
 status ninit();
+void bfree();
 
-void assign(ushort variable, ushort value);
-void unassign(ushort variable);
-ushort nconflicts(ushort variable, ushort value);
+void assign(uint8_t variable, uint8_t value);
+void unassign(uint8_t variable);
+
+uint8_t nconflicts(uint8_t variable, uint8_t value);
+uint8_t count(uint8_t *seq, uint8_t size);
+status is_var(uint8_t variable);
 
 void support_pruning();
-void suppose(ushort variable, ushort value);
-void prune(ushort variable, ushort value);
+void prune(uint8_t variable, uint8_t value);
 void infer_assignment();
-ushort count(ushort *seq, ushort size);
 
 #define ROW(x) ((x) / NUM_VALUES);
 #define COL(x) ((x) % NUM_VALUES);
-status is_var(ushort variable);
 
 /* ----- Suplementary / Debugging Functions ----- */
 void showVars();
 void showCurrentDomains();
-void showVariableDomain(ushort variable);
-void showRemovals();
+void showVariableDomain(uint8_t variable);
 void display();
 
 #endif
