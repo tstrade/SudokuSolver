@@ -1,11 +1,13 @@
 #include "AC3.h"
+#include "../CSP/CSP.h"
 #include "../Queue/queue.h"
+#include "../sudoku_threads.h"
 
 void *qcontrol(void *arg)
 {
   qinit();
-  uint8_t rev_val = 0;
-  uint8_t ver_val = 0;
+  int rev_val = 0;
+  int ver_val = 0;
 
   while (QSIZE != 0) {
     Q_LOCK;
@@ -30,8 +32,8 @@ void *qcontrol(void *arg)
       VER_VAL(&ver_val);
     } while (ver_val != NUM_NEIGHBORS);
   }
-  printf("\t\tAC3 solved the %dx%d Sudoku board in just %d seconds!\n", 
-    NUM_VALUES, NUM_VALUES, difftime(clock(), start));
+  printf("\t\tAC3 solved the %dx%d Sudoku board in just %f seconds!\n", 
+    NUM_VALUES, NUM_VALUES, difftime(clock(), start) / CLOCKS_PER_SEC);
   
   finished = TRUE;
   R_BDCAST;

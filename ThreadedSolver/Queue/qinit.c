@@ -1,7 +1,7 @@
 #include "queue.h"
 
 struct qentry queue[NUM_SLOTS * NUM_NEIGHBORS];
-uint8_t in_q[NUM_SLOTS];
+uint32_t in_q[NUM_SLOTS];
 
 uint8_t Xi = 0;
 uint8_t Xj = 0;

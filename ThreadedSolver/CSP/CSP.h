@@ -7,6 +7,22 @@
 #define NTVAR      0
 #define UNASSIGNED 0
 
+#ifndef NUM_VALUES
+#define NUM_VALUES 9
+#endif
+
+#ifndef NUM_SLOTS
+#define NUM_SLOTS (NUM_VALUES * NUM_VALUES)
+#endif
+
+#ifndef NUM_NEIGHBORS
+#define NUM_NEIGHBORS ((NUM_VALUES - 1) + (2 * (NUM_VALUES - (NUM_VALUES / 3))))
+#endif
+
+#ifndef NUM_BOX
+#define NUM_BOX (NUM_VALUES / 3)
+#endif
+
 struct CSP {
   uint8_t nassigns, nvars;
   uint8_t domains[NUM_SLOTS][NUM_VALUES + 1];
@@ -14,8 +30,8 @@ struct CSP {
 };
 
 extern struct CSP csp;
-extern uint8_t *neighbors[];
-extern uint8_t assignments[];
+extern uint8_t neighbors[NUM_SLOTS][NUM_NEIGHBORS];
+extern uint8_t assignments[NUM_SLOTS];
 
 #define DCMETA    0
 #define DCOUNT(x) (csp.domains[(x)][DCMETA])

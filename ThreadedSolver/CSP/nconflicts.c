@@ -3,7 +3,7 @@
 uint8_t nconflicts(uint8_t variable, uint8_t value)
 {
     uint8_t conflicts = 0;
-    for (uint8_t n_idx = 0; n_idx < NUM_NEIGHBORS; n_idx) {
+    for (uint8_t n_idx = 0; n_idx < NUM_NEIGHBORS; n_idx++) {
         uint8_t nbr = neighbors[variable][n_idx];
         if (constraint(variable, value, nbr, assignments[nbr]) == 0)
             conflicts++;

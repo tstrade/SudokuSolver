@@ -1,7 +1,7 @@
 #include "sudoku_threads.h"
-#include "AC3/AC3.h"
-#include "CSP/CSP.h"
 #include "Queue/queue.h"
+#include "CSP/CSP.h"
+#include "AC3/AC3.h"
 
 pthread_t r_threads[NUM_VALUES];
 pthread_t v_threads[NUM_NEIGHBORS];

@@ -1,5 +1,5 @@
-#ifndef SODUKU_THREADS_H
-#define SODUKU_THREADS_H
+#ifndef SUDOKU_THREADS_H
+#define SUDOKU_THREADS_H
 
 #include <pthread.h>
 #include <semaphore.h>

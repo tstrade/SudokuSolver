@@ -109,6 +109,8 @@ struct verifier {
     pthread_mutex_t vtex;
 };
 extern struct verifier vtab[];
+#define V_LOCK(x)   (pthread_mutex_lock(&vtab[(x)].vtex))
+#define V_UNLOCK(x) (pthread_mutex_unlock(&vtab[(x)].vtex))
 status vinit();
 status vfree();
 

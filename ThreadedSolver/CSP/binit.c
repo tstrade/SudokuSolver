@@ -1,5 +1,6 @@
 #include "CSP.h"
 
+struct CSP csp;
 uint8_t neighbors[NUM_SLOTS][NUM_NEIGHBORS];
 uint8_t assignments[NUM_SLOTS]; 
 
