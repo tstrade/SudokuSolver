@@ -4,9 +4,6 @@ status dequeue()
 {
   qid16 oldhead, newhead;
 
-  if (QSIZE == 0)
-    return EMPTY;
-
   /* Obtain the index of the new queue head */
   oldhead = QHEAD;
   newhead = queue[oldhead].qnext;
@@ -19,6 +16,9 @@ status dequeue()
   SETHEAD(newhead);
   DECSIZE;
   in_q[Xi] &= (~QMSK(Xi, Xj));
+
+  if (QSIZE <= 0)
+    return EMPTY;
 
   return SUCCESS;
 }

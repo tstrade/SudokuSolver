@@ -7,7 +7,7 @@ status enqueue(uint8_t i, uint8_t j)
 
   if (i == j)
     return FAILURE;
-
+    
   /* Get index for the new tail of the queue */
   maxsize = NUM_SLOTS * NUM_NEIGHBORS;
   oldtail = QTAIL;

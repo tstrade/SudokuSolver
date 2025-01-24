@@ -5,20 +5,22 @@
 
 void *qcontrol(void *arg)
 {
-  qinit();
-  int rev_val = 0;
-  int ver_val = 0;
+  if (qinit() == FAILURE)
+    goto end_fail;
+
+  int rev_val, ver_val;
 
   while (QSIZE != 0) {
-    Q_LOCK;
+    pthread_mutex_lock(&qtex);
     rflag = FALSE;
     rev_val = ver_val = 0;
     dequeue();
-    R_BDCAST;
-    Q_UNLOCK;
+    pthread_cond_broadcast(&rcond);
+    pthread_mutex_unlock(&qtex);
+    sched_yield();
 
     do {
-      REV_VAL(&rev_val);
+      sem_getvalue(&revising, &rev_val);
     } while (rev_val != NUM_VALUES);
       
     if (rflag == FALSE)
@@ -27,60 +29,60 @@ void *qcontrol(void *arg)
     if (DCOUNT(Xi) == 0)
       EXIT;
 
-    V_BDCAST;
+    pthread_cond_broadcast(&vcond);
+    sched_yield();
     do {
-      VER_VAL(&ver_val);
+      sem_getvalue(&verifying, &ver_val);
     } while (ver_val != NUM_NEIGHBORS);
   }
-  printf("\t\tAC3 solved the %dx%d Sudoku board in just %f seconds!\n", 
-    NUM_VALUES, NUM_VALUES, difftime(clock(), start) / CLOCKS_PER_SEC);
-  
-  finished = TRUE;
-  R_BDCAST;
-  V_BDCAST;
 
-  infer_assignment();
-  display();
-  
-  return NULL;
+  printf("\t\tAC3 solved the %d x %d Sudoku board in just %f seconds!\n", 
+    NUM_VALUES, NUM_VALUES, difftime(clock(), start) / CLOCKS_PER_SEC);
+  goto end;
+
+  end_fail:
+    printf("\t\tQueue initialization failed!\n");
+  end:
+    finished = TRUE;
+    pthread_cond_broadcast(&rcond);
+    pthread_cond_broadcast(&vcond);
+
+    infer_assignment();
+    display();
+    
+    return NULL;
 }
 
 void *revise(void *arg)
 {
   struct revisor r = *(struct revisor *)arg;
   uint8_t Xi_val, Xj_val;
-  uint8_t nsatisfied;
 
   while (TRUE) {
-    REV_WAIT;
-    R_LOCK(r.self);
-    R_WAIT(&r.rtex);
+    pthread_mutex_lock(&r.rtex);
+    pthread_cond_wait(&rcond, &r.rtex);
+    sem_wait(&revising);
 
-    if (finished == TRUE)
+    if (finished == TRUE) 
       break;
 
     if ((Xi_val = csp.domains[Xi][r.self]) == 0)
       goto revised;
 
-    nsatisfied = 0;
-    for (uint8_t j = 0; j < NUM_VALUES; j++) {
-      if ((Xj_val = csp.domains[Xj][j]) == 0)
-        continue;
+    if ((Xj_val = csp.domains[Xj][r.self]) == 0)
+      goto revised;
 
-      nsatisfied += constraint(Xi, Xi_val, Xj, Xj_val);
-    }
-
-    if (nsatisfied == 0) {
+    if (constraint(Xi, Xi_val, Xj, Xj_val) == 0) {
       prune(Xi, Xi_val);
       rflag = TRUE;
     }
 
     revised:
-    R_UNLOCK(r.self);
-    REV_POST;
+      sem_post(&revising);
+      pthread_mutex_unlock(&r.rtex);
   }
-  R_UNLOCK(r.self);
-  REV_POST;
+  sem_post(&revising);
+  pthread_mutex_unlock(&r.rtex);
   pthread_exit(NULL);
 }
 
@@ -90,11 +92,11 @@ void *verify(void *arg)
   uint8_t nbr;
 
   while (TRUE) {
-    VER_WAIT;
-    V_LOCK(v.self);
-    V_WAIT(&v.vtex);
+    pthread_mutex_lock(&v.vtex);
+    pthread_cond_wait(&vcond, &v.vtex);
+    sem_wait(&verifying);
 
-    if (finished == TRUE)
+    if (finished == TRUE) 
       break;
 
     nbr = neighbors[Xi][v.self];
@@ -104,15 +106,15 @@ void *verify(void *arg)
     if (is_present(nbr, Xi) == ABSNT)
       goto verified;
 
-    Q_LOCK;
+    pthread_mutex_lock(&qtex);
     enqueue(nbr, Xi);
-    Q_UNLOCK;
+    pthread_mutex_unlock(&qtex);
     
     verified:
-    V_UNLOCK(v.self);
-    VER_POST;
+      sem_post(&verifying);
+      pthread_mutex_unlock(&v.vtex);
   }
-  V_UNLOCK(v.self);
-  VER_POST;
+  sem_post(&verifying);
+  pthread_mutex_unlock(&v.vtex);
   pthread_exit(NULL);
 }

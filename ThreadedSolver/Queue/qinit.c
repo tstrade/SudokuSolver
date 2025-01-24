@@ -13,6 +13,7 @@ qid16 qtail = 0;
 status qinit()
 {
   for (uint8_t slot = 0; slot < NUM_SLOTS; slot++) {
+    in_q[slot] = 0;
     for (uint8_t neighbor = 0; neighbor < NUM_NEIGHBORS; neighbor++) {
       if (enqueue(slot, neighbors[slot][neighbor]) == FAILURE)
         return FAILURE;

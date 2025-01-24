@@ -1,6 +1,6 @@
 #include "AC3.h"
 
-pthread_mutex_t qtex, dtex;
+pthread_mutex_t qtex;
 pthread_cond_t rcond, vcond;
 sem_t revising, verifying;
 
@@ -14,7 +14,6 @@ status ac3init()
 {
     status retval = SUCCESS;
     retval |= pthread_mutex_init(&qtex, NULL);
-    retval |= pthread_mutex_init(&dtex, NULL);
 
     retval |= pthread_cond_init(&rcond, NULL);
     retval |= pthread_cond_init(&vcond, NULL);
@@ -32,7 +31,6 @@ status ac3free()
 {
     status retval = SUCCESS;
     retval |= pthread_mutex_destroy(&qtex);
-    retval |= pthread_mutex_destroy(&dtex);
 
     retval |= pthread_cond_destroy(&rcond);
     retval |= pthread_cond_destroy(&vcond);
