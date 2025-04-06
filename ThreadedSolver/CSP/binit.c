@@ -42,7 +42,7 @@ status binit(char *initialPositions)
 
     for (uint8_t val = 1; val <= NUM_VALUES; val++) {
       if (val != assignments[slot])
-        prune(var, val);
+        prune(slot, val);
     }
   }
 

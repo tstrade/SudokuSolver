@@ -14,7 +14,7 @@ CFLS := $(T_CFL) $(Q_CFL) $(C_CFL) $(A_CFL)
 DEPS := $(ADEPS) $(CDEPS) $(QDEPS) $(TDEPS)
 
 CC := gcc
-CFLAGS := -g -Wall -Werror -std=gnu99 -pthread
+CFLAGS := -g -pedantic -Wall -Werror -std=gnu99 -pthread
 
 DB := gdb
 DFLAGS := -args
